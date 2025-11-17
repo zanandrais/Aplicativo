@@ -1,0 +1,22 @@
+﻿services:
+  - type: web
+    name: flex-counter-service
+    runtime: node
+    plan: free
+    region: oregon
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: GOOGLE_SHEETS_ID
+        sync: false # defina no painel do Render
+      - key: GOOGLE_SHEETS_CREDENTIALS
+        sync: false # cole o JSON completo da service account
+      - key: GOOGLE_SHEETS_TAB
+        value: inventario
+      - key: GOOGLE_SHEETS_COLUMN
+        value: F
+      - key: GOOGLE_SHEETS_START_ROW
+        value: "5"
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true

@@ -1,0 +1,14 @@
+﻿node_modules/
+oceanic-facet-363813-daf7974e1120.json
+.DS_Store
+.env
+*.log
+npm-debug.log*
+yarn-error.log
+
+# Local env overrides
+*.local
+
+# Coverage / build artifacts
+coverage/
+dist/

@@ -1,0 +1,18 @@
+﻿{
+  "name": "flex-counter-service",
+  "version": "1.0.0",
+  "description": "Simple flexbox counter webservice ready for Render",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "push:counters": "node scripts/pushCounters.js"
+  },
+  "keywords": ["flex", "counter", "render"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "googleapis": "^133.0.0"
+  }
+}
