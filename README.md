@@ -49,7 +49,7 @@ Aplicação Node + Express com front-end Flexbox que exibe nomes vindos do Googl
 3. Compartilhe a planilha com o e-mail da Service Account (permissão de editor).
 4. Use `Get-Content <arquivo>.json -Raw` para preencher `GOOGLE_SHEETS_CREDENTIALS`.
 
-Quando configurado, cada clique nos botões envia o valor para `inventario!F5:F17`.
+Quando configurado, a página lê automaticamente os nomes/quantidades em `E5:F17` e cada clique nos botões envia o novo valor para `inventario!F5:F17`.
 
 ### Script manual (atualiza valores em lote)
 ```bash

@@ -1,8 +1,9 @@
 ﻿const MIN_VALUE = 0;
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSknwMWFA6Akwkw3sihnQNjwJG9qAe_3dcAqevkqmf5LFKYtodqVOdJeDz7lDg0Klyi0dH24H2LH1-5/pub?gid=1183098319&single=true&output=csv&range=E5:E17';
+const CSV_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSknwMWFA6Akwkw3sihnQNjwJG9qAe_3dcAqevkqmf5LFKYtodqVOdJeDz7lDg0Klyi0dH24H2LH1-5/pub?gid=1183098319&single=true&output=csv&range=E5:F17';
 
 const state = {
-  names: [],
+  entries: [],
   counters: new Map(),
 };
 
@@ -15,15 +16,15 @@ async function init() {
   setStatus('Carregando nomes...');
 
   try {
-    const names = await fetchNames();
+    const entries = await fetchInventory();
 
-    if (!names.length) {
+    if (!entries.length) {
       listElement.innerHTML = '';
       setStatus('Nenhum nome encontrado no inventário.');
       return;
     }
 
-    renderList(names);
+    renderList(entries);
     setStatus('');
   } catch (error) {
     console.error('Erro ao carregar nomes do inventário', error);
@@ -31,7 +32,7 @@ async function init() {
   }
 }
 
-async function fetchNames() {
+async function fetchInventory() {
   const response = await fetch(CSV_URL);
   if (!response.ok) {
     throw new Error(`Falha ao buscar CSV (${response.status})`);
@@ -41,30 +42,48 @@ async function fetchNames() {
   return text
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map(parseInventoryRow)
+    .filter((entry) => entry.name);
 }
 
-function renderList(names) {
-  state.names = names;
+function parseInventoryRow(row) {
+  const [rawName = '', rawValue = ''] = row.split(',');
+  return {
+    name: rawName.trim(),
+    value: parseCounterValue(rawValue),
+  };
+}
+
+function parseCounterValue(cell) {
+  if (!cell) return 0;
+  const normalized = cell.replace(/[^\d,-]/g, '').replace(',', '.');
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function renderList(entries) {
+  state.entries = entries;
   state.counters.clear();
 
-  const markup = names.map((name, index) => createCounterMarkup(name, index)).join('');
+  const markup = entries.map((entry, index) => createCounterMarkup(entry, index)).join('');
   listElement.innerHTML = markup;
 
-  names.forEach((_, index) => {
-    state.counters.set(index, 0);
+  entries.forEach((entry, index) => {
+    state.counters.set(index, entry.value ?? 0);
     syncDisplay(index);
   });
 }
 
-function createCounterMarkup(name, index) {
-  const safeName = escapeHtml(name);
+function createCounterMarkup(entry, index) {
+  const safeName = escapeHtml(entry.name);
+  const startValue = Number.isFinite(entry.value) ? entry.value : 0;
   return `
     <li class="counter-item">
       <span class="counter-item__name">${safeName}</span>
       <div class="counter-item__controls" data-id="${index}">
         <button class="counter-btn" data-direction="down" aria-label="Diminuir valor para ${safeName}">-</button>
-        <output class="counter-value" aria-label="Pontuação de ${safeName}">0</output>
+        <output class="counter-value" aria-label="Pontuação de ${safeName}">${startValue}</output>
         <button class="counter-btn" data-direction="up" aria-label="Aumentar valor para ${safeName}">+</button>
       </div>
     </li>
