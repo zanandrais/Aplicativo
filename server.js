@@ -26,6 +26,14 @@ const EXPENSES_START_ROW = Number(process.env.EXPENSES_START_ROW ?? 5);
 const EXPENSES_END_ROW = Number(process.env.EXPENSES_END_ROW ?? 200);
 const EXPENSES_RANGE = process.env.EXPENSES_RANGE || `A${EXPENSES_START_ROW}:C${EXPENSES_END_ROW}`;
 
+const INCOME_TAB = process.env.INCOME_TAB || INVENTORY_TAB;
+const INCOME_START_ROW = Number(process.env.INCOME_START_ROW ?? 8);
+const INCOME_END_ROW = Number(process.env.INCOME_END_ROW ?? 200);
+const INCOME_RANGE = process.env.INCOME_RANGE || `AD${INCOME_START_ROW}:AF${INCOME_END_ROW}`;
+
+const RESERVE_REAL_CELL = process.env.RESERVE_REAL_CELL || 'AE5';
+const RESERVE_BASE_CELL = process.env.RESERVE_BASE_CELL || 'AE6';
+
 const CATEGORY_CONFIG = {
   sacolao: {
     tab: INVENTORY_TAB,
@@ -62,20 +70,7 @@ app.get('/api/expenses', async (_req, res) => {
   }
 
   try {
-    const sheets = await getSheetsClient();
-    const range = `${EXPENSES_TAB}!${EXPENSES_RANGE}`;
-    const { data } = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range,
-    });
-
-    const entries = (data.values || []).map((row = [], index) => ({
-      rowIndex: EXPENSES_START_ROW + index,
-      date: row[0] || '',
-      description: row[1] || '',
-      amount: row[2] || '',
-    }));
-
+    const entries = await fetchExpenseEntries();
     res.json({ entries });
   } catch (error) {
     console.error('Falha ao carregar gastos', error);
@@ -112,7 +107,7 @@ app.post('/api/expenses', async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Falha ao salvar gasto no Google Sheets', error);
+    console.error('Falha ao salvar gasto', error);
     res.status(500).json({ error: 'Falha ao salvar o gasto' });
   }
 });
@@ -139,8 +134,98 @@ app.delete('/api/expenses/:rowIndex', async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Falha ao remover gasto', error);
-    res.status(500).json({ error: 'Não foi possível remover o lançamento' });
+    console.error('Falha ao excluir gasto', error);
+    res.status(500).json({ error: 'Não foi possível excluir o lançamento' });
+  }
+});
+
+app.get('/api/incomes', async (_req, res) => {
+  if (!SHEET_ID) {
+    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
+  }
+
+  try {
+    const [entries, reserveValues, expenseEntries] = await Promise.all([
+      fetchIncomeEntries(),
+      readReserveValues(),
+      fetchExpenseEntries(),
+    ]);
+
+    const expenseTotals = groupTotalsByMonth(expenseEntries);
+
+    res.json({
+      entries,
+      reserveReal: reserveValues.real,
+      reserveBase: reserveValues.base,
+      expenseTotals,
+    });
+  } catch (error) {
+    console.error('Falha ao carregar entradas', error);
+    res.status(500).json({ error: 'Não foi possível carregar as entradas' });
+  }
+});
+
+app.post('/api/incomes', async (req, res) => {
+  if (typeof req.body !== 'object') {
+    return res.status(400).json({ error: 'Corpo da requisição inválido' });
+  }
+
+  const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
+  const amount = Number(req.body.amount);
+  const date = req.body.date ? String(req.body.date) : new Date().toISOString().slice(0, 10);
+
+  if (!description || !Number.isFinite(amount) || amount <= 0) {
+    return res.status(400).json({ error: 'Descrição e valor são obrigatórios' });
+  }
+
+  if (!SHEET_ID) {
+    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
+  }
+
+  try {
+    const sheets = await getSheetsClient();
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: `${INCOME_TAB}!${INCOME_RANGE}`,
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: [[description, amount, date]] },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Falha ao salvar entrada', error);
+    res.status(500).json({ error: 'Falha ao salvar a entrada' });
+  }
+});
+
+app.post('/api/reserve', async (req, res) => {
+  if (typeof req.body !== 'object') {
+    return res.status(400).json({ error: 'Corpo da requisição inválido' });
+  }
+
+  const value = Number(req.body.value);
+  if (!Number.isFinite(value) || value < 0) {
+    return res.status(400).json({ error: 'Valor inválido para a reserva' });
+  }
+
+  if (!SHEET_ID) {
+    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
+  }
+
+  try {
+    const sheets = await getSheetsClient();
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `${RESERVE_REAL_CELL}:${RESERVE_REAL_CELL}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [[value]] },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Falha ao atualizar reserva', error);
+    res.status(500).json({ error: 'Não foi possível atualizar a reserva' });
   }
 });
 
@@ -213,4 +298,66 @@ async function getSheetsClient() {
 
   cachedSheetsClient = google.sheets({ version: 'v4', auth });
   return cachedSheetsClient;
+}
+
+async function fetchExpenseEntries() {
+  const sheets = await getSheetsClient();
+  const { data } = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${EXPENSES_TAB}!${EXPENSES_RANGE}`,
+  });
+
+  return (data.values || []).map((row = [], index) => {
+    const date = row[0] || '';
+    const description = row[1] || '';
+    const amount = Number(row[2]) || 0;
+    return {
+      rowIndex: EXPENSES_START_ROW + index,
+      date,
+      description,
+      amount,
+      monthKey: getMonthKey(date),
+    };
+  }).filter((entry) => entry.date || entry.description || entry.amount);
+}
+
+async function fetchIncomeEntries() {
+  const sheets = await getSheetsClient();
+  const { data } = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${INCOME_TAB}!${INCOME_RANGE}`,
+  });
+
+  return (data.values || []).map((row = []) => ({
+    description: row[0] || '',
+    amount: row[1] || '',
+    date: row[2] || '',
+  }));
+}
+
+async function readReserveValues() {
+  const sheets = await getSheetsClient();
+  const [realResp, baseResp] = await Promise.all([
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${RESERVE_REAL_CELL}:${RESERVE_REAL_CELL}` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${RESERVE_BASE_CELL}:${RESERVE_BASE_CELL}` }),
+  ]);
+
+  const real = Number(realResp.data.values?.[0]?.[0]) || 0;
+  const base = Number(baseResp.data.values?.[0]?.[0]) || 0;
+  return { real, base };
+}
+
+function groupTotalsByMonth(entries) {
+  return entries.reduce((acc, entry) => {
+    if (!entry.monthKey) return acc;
+    acc[entry.monthKey] = (acc[entry.monthKey] || 0) + entry.amount;
+    return acc;
+  }, {});
+}
+
+function getMonthKey(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }

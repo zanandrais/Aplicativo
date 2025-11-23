@@ -1,0 +1,98 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Entradas do Mês - Equipe Flex</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="home-board">
+      <header class="home-header">
+        <div>
+          <h1>Entradas do Mês</h1>
+          <p>Cadastre entradas financeiras e acompanhe a reserva disponível.</p>
+        </div>
+        <nav class="category-nav">
+          <span>Acessar:</span>
+          <a class="category-nav__link" href="index.html">Registrar gasto</a>
+          <a class="category-nav__link" href="controle.html">Controle de Gastos</a>
+          <a class="category-nav__link" href="sacolao.html">Sacolão</a>
+          <a class="category-nav__link" href="dispensa.html">Dispensa</a>
+          <a class="category-nav__link" href="acougue.html">Açougue</a>
+          <a class="category-nav__link" href="limpeza.html">Limpeza</a>
+        </nav>
+      </header>
+
+      <section class="expense-card">
+        <h2>Registrar nova entrada</h2>
+        <form id="income-form" class="expense-form">
+          <label class="expense-field">
+            <span>Data</span>
+            <div class="expense-date-input">
+              <input type="date" id="income-date" required />
+              <button class="ghost-btn" type="button" id="income-today">Hoje</button>
+            </div>
+          </label>
+          <label class="expense-field">
+            <span>Descrição</span>
+            <input type="text" id="income-description" placeholder="Ex.: Salário" required />
+          </label>
+          <label class="expense-field">
+            <span>Valor (R$)</span>
+            <input type="number" id="income-amount" step="0.01" min="0" placeholder="0,00" required />
+          </label>
+          <button class="primary-btn" type="submit">Salvar entrada</button>
+        </form>
+        <p class="expense-feedback" data-feedback aria-live="polite"></p>
+      </section>
+
+      <section class="reserve-card">
+        <div>
+          <h2>Reserva Real</h2>
+          <p>Atualize o valor disponível atualmente.</p>
+        </div>
+        <div class="reserve-card__form">
+          <label class="expense-field">
+            <span>Valor (R$)</span>
+            <input type="number" id="reserve-real" step="0.01" min="0" />
+          </label>
+          <button class="primary-btn" type="button" id="reserve-save">Salvar reserva</button>
+        </div>
+        <div class="reserve-card__summary">
+          <p>Reserva teórica do mês:</p>
+          <strong data-reserve-theoretical>R$ 0,00</strong>
+        </div>
+      </section>
+
+      <section class="expenses-panel income-panel">
+        <div class="expenses-panel__filters">
+          <label class="expenses-filter">
+            <span>Mês</span>
+            <select id="income-month"></select>
+          </label>
+          <div class="expenses-summary">
+            <span>Total de entradas:</span>
+            <strong data-income-total>R$ 0,00</strong>
+          </div>
+          <button class="ghost-btn" type="button" id="reload-income">Atualizar lista</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Valor (R$)</th>
+            </tr>
+          </thead>
+          <tbody data-income-list>
+            <tr>
+              <td colspan="3">Carregando dados...</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+    <script type="module" src="incomes.js"></script>
+  </body>
+</html>
