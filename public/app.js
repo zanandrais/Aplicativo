@@ -1,10 +1,19 @@
 ﻿const MIN_VALUE = 0;
-const CSV_URL =
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSknwMWFA6Akwkw3sihnQNjwJG9qAe_3dcAqevkqmf5LFKYtodqVOdJeDz7lDg0Klyi0dH24H2LH1-5/pub?gid=1183098319&single=true&output=csv&range=E5:F17';
+const SHEET_BASE_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSknwMWFA6Akwkw3sihnQNjwJG9qAe_3dcAqevkqmf5LFKYtodqVOdJeDz7lDg0Klyi0dH24H2LH1-5/pub?gid=1183098319&single=true&output=csv&range=';
+
+const rootElement = document.querySelector('[data-category]');
+const config = {
+  csvRange: rootElement?.dataset.csvRange ?? 'E5:F17',
+  category: rootElement?.dataset.category ?? 'sacolao',
+};
+
+const CSV_URL = `${SHEET_BASE_URL}${encodeURIComponent(config.csvRange)}`;
 
 const state = {
   entries: [],
   counters: new Map(),
+  category: config.category,
 };
 
 const listElement = document.querySelector('.counter-list');
@@ -136,7 +145,7 @@ async function persistCounter(index, value) {
     const response = await fetch('/api/counters', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ index, value }),
+      body: JSON.stringify({ index, value, category: state.category }),
     });
 
     if (!response.ok) {

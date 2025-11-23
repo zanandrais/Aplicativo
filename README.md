@@ -1,6 +1,6 @@
 ﻿# Flex Counter Service
 
-Aplicação Node + Express com front-end Flexbox que exibe nomes vindos do Google Sheets e permite ajustar quantidades com botões +/-. Preparado para deploy no Render.com.
+Aplicação Node + Express com front-end Flexbox que exibe listas do Google Sheets e permite ajustar quantidades com botões +/-. Preparado para deploy no Render.com.
 
 ## Pré-requisitos
 - Node.js 18+
@@ -19,7 +19,7 @@ Aplicação Node + Express com front-end Flexbox que exibe nomes vindos do Googl
    ```bash
    npm start
    ```
-4. Acesse http://localhost:3000
+4. Acesse http://localhost:3000 (Sacolão) ou http://localhost:3000/dispensa.html.
 
 ## Deploy no Render
 1. Faça o upload deste diretório para um repositório Git.
@@ -31,16 +31,19 @@ Aplicação Node + Express com front-end Flexbox que exibe nomes vindos do Googl
 4. Adicione as variáveis no painel do Render (Environment → Add Secret):
    - `GOOGLE_SHEETS_ID`
    - `GOOGLE_SHEETS_CREDENTIALS` (cole o JSON inteiro)
-   - Opcionais: `GOOGLE_SHEETS_TAB`, `GOOGLE_SHEETS_COLUMN`, `GOOGLE_SHEETS_START_ROW`
+   - Opcionais para cada categoria conforme tabela abaixo
 5. Deploy e abra a URL gerada.
 
-## Sincronização com Google Sheets (F5:F17)
+## Sincronização com Google Sheets (Sacolão e Dispensa)
 | Variável | Descrição |
 | --- | --- |
 | `GOOGLE_SHEETS_ID` | ID da planilha (ex.: `1K80WnIJAtTTQpbGKQF5QJk5FNfaAl5ks5nmCI7y9o2s`). |
-| `GOOGLE_SHEETS_TAB` (opcional) | Aba usada para leitura/escrita. Padrão: `inventario`. |
-| `GOOGLE_SHEETS_COLUMN` (opcional) | Coluna onde os valores são gravados. Padrão: `F`. |
-| `GOOGLE_SHEETS_START_ROW` (opcional) | Primeira linha do intervalo. Padrão: `5`. |
+| `GOOGLE_SHEETS_TAB` (opcional) | Aba usada para leitura/escrita da categoria **Sacolão** (padrão `inventario`). |
+| `GOOGLE_SHEETS_COLUMN` (opcional) | Coluna onde os valores da categoria **Sacolão** são gravados (padrão `F`). |
+| `GOOGLE_SHEETS_START_ROW` (opcional) | Primeira linha da categoria **Sacolão** (padrão `5`). |
+| `DISPENSA_TAB` (opcional) | Aba usada na categoria **Dispensa** (padrão igual ao valor de `GOOGLE_SHEETS_TAB`). |
+| `DISPENSA_COLUMN` (opcional) | Coluna usada na categoria **Dispensa** (padrão `K`). |
+| `DISPENSA_START_ROW` (opcional) | Primeira linha da categoria **Dispensa** (padrão `5`). |
 | `GOOGLE_SHEETS_CREDENTIALS` | JSON da Service Account com acesso de edição. |
 
 **Gerando o JSON**
@@ -49,7 +52,7 @@ Aplicação Node + Express com front-end Flexbox que exibe nomes vindos do Googl
 3. Compartilhe a planilha com o e-mail da Service Account (permissão de editor).
 4. Use `Get-Content <arquivo>.json -Raw` para preencher `GOOGLE_SHEETS_CREDENTIALS`.
 
-Quando configurado, a página lê automaticamente os nomes/quantidades em `E5:F17` e cada clique nos botões envia o novo valor para `inventario!F5:F17`.
+Quando configurado, a página principal (`/` ou `index.html`) lê automaticamente os nomes/quantidades em `E5:F17` (Sacolão) e envia os novos valores para `inventario!F5:F17`. A página `dispensa.html` faz o mesmo para `J5:K50` e escreve em `inventario!K5:K50`. Links no topo das páginas permitem alternar rapidamente entre as categorias.
 
 ### Script manual (atualiza valores em lote)
 ```bash
@@ -73,6 +76,7 @@ flex-counter-service/
 ├── server.js
 ├── public/
 │   ├── index.html
+│   ├── dispensa.html
 │   ├── styles.css
 │   └── app.js
 ├── scripts/

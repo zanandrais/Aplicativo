@@ -9,9 +9,24 @@ const INVENTORY_TAB = process.env.GOOGLE_SHEETS_TAB || 'inventario';
 const INVENTORY_COLUMN = process.env.GOOGLE_SHEETS_COLUMN || 'F';
 const INVENTORY_START_ROW = Number(process.env.GOOGLE_SHEETS_START_ROW ?? 5);
 
-app.use(express.json());
+const DISPENSA_TAB = process.env.DISPENSA_TAB || INVENTORY_TAB;
+const DISPENSA_COLUMN = process.env.DISPENSA_COLUMN || 'K';
+const DISPENSA_START_ROW = Number(process.env.DISPENSA_START_ROW ?? 5);
 
-// Serve the static front-end built with Flexbox controls
+const CATEGORY_CONFIG = {
+  sacolao: {
+    tab: INVENTORY_TAB,
+    column: INVENTORY_COLUMN,
+    startRow: INVENTORY_START_ROW,
+  },
+  dispensa: {
+    tab: DISPENSA_TAB,
+    column: DISPENSA_COLUMN,
+    startRow: DISPENSA_START_ROW,
+  },
+};
+
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/health', (_req, res) => {
@@ -23,7 +38,7 @@ app.post('/api/counters', async (req, res) => {
     return res.status(400).json({ error: 'Corpo da requisição inválido' });
   }
 
-  const { index, value } = req.body;
+  const { index, value, category = 'sacolao' } = req.body;
 
   if (!Number.isInteger(index) || !Number.isInteger(value) || index < 0 || value < 0) {
     return res.status(400).json({ error: 'index e value devem ser inteiros positivos' });
@@ -33,10 +48,17 @@ app.post('/api/counters', async (req, res) => {
     return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
   }
 
+  const normalizedCategory = String(category).toLowerCase();
+  const targetCategory = CATEGORY_CONFIG[normalizedCategory];
+
+  if (!targetCategory) {
+    return res.status(400).json({ error: 'Categoria desconhecida' });
+  }
+
   try {
     const sheets = await getSheetsClient();
-    const row = INVENTORY_START_ROW + index;
-    const range = `${INVENTORY_TAB}!${INVENTORY_COLUMN}${row}`;
+    const row = targetCategory.startRow + index;
+    const range = `${targetCategory.tab}!${targetCategory.column}${row}`;
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,

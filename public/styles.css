@@ -38,6 +38,30 @@ body {
   color: #475467;
 }
 
+.category-nav {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.category-nav__link {
+  color: #1d3a8a;
+  font-weight: 600;
+  text-decoration: none;
+  background: #e0e7ff;
+  padding: 0.4rem 0.95rem;
+  border-radius: 999px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.category-nav__link:hover {
+  background: #c7d2fe;
+  color: #0f1f55;
+}
+
 .counter-status {
   margin: 0;
   color: #475467;
