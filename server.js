@@ -26,14 +26,6 @@ const EXPENSES_START_ROW = Number(process.env.EXPENSES_START_ROW ?? 5);
 const EXPENSES_END_ROW = Number(process.env.EXPENSES_END_ROW ?? 200);
 const EXPENSES_RANGE = process.env.EXPENSES_RANGE || `A${EXPENSES_START_ROW}:C${EXPENSES_END_ROW}`;
 
-const INCOME_TAB = process.env.INCOME_TAB || INVENTORY_TAB;
-const INCOME_START_ROW = Number(process.env.INCOME_START_ROW ?? 5);
-const INCOME_END_ROW = Number(process.env.INCOME_END_ROW ?? 100);
-const INCOME_RANGE = process.env.INCOME_RANGE || `AD${INCOME_START_ROW}:AF${INCOME_END_ROW}`;
-
-const RESERVE_REAL_CELL = process.env.RESERVE_REAL_CELL || 'AE2';
-const RESERVE_BASE_CELL = process.env.RESERVE_BASE_CELL || 'AE3';
-
 const CATEGORY_CONFIG = {
   sacolao: {
     tab: INVENTORY_TAB,
@@ -139,96 +131,6 @@ app.delete('/api/expenses/:rowIndex', async (req, res) => {
   }
 });
 
-app.get('/api/incomes', async (_req, res) => {
-  if (!SHEET_ID) {
-    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
-  }
-
-  try {
-    const [entries, reserveValues, expenseEntries] = await Promise.all([
-      fetchIncomeEntries(),
-      readReserveValues(),
-      fetchExpenseEntries(),
-    ]);
-
-    const expenseTotals = groupTotalsByMonth(expenseEntries);
-
-    res.json({
-      entries,
-      reserveReal: reserveValues.real,
-      reserveBase: reserveValues.base,
-      expenseTotals,
-    });
-  } catch (error) {
-    console.error('Falha ao carregar entradas', error);
-    res.status(500).json({ error: 'Não foi possível carregar as entradas' });
-  }
-});
-
-app.post('/api/incomes', async (req, res) => {
-  if (typeof req.body !== 'object') {
-    return res.status(400).json({ error: 'Corpo da requisição inválido' });
-  }
-
-  const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
-  const amount = Number(req.body.amount);
-  const date = req.body.date ? String(req.body.date) : new Date().toISOString().slice(0, 10);
-
-  if (!description || !Number.isFinite(amount) || amount <= 0) {
-    return res.status(400).json({ error: 'Descrição e valor são obrigatórios' });
-  }
-
-  if (!SHEET_ID) {
-    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
-  }
-
-  try {
-    const sheets = await getSheetsClient();
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
-      range: `${INCOME_TAB}!${INCOME_RANGE}`,
-      valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
-      requestBody: { values: [[description, amount, date]] },
-    });
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Falha ao salvar entrada', error);
-    res.status(500).json({ error: 'Falha ao salvar a entrada' });
-  }
-});
-
-app.post('/api/reserve', async (req, res) => {
-  if (typeof req.body !== 'object') {
-    return res.status(400).json({ error: 'Corpo da requisição inválido' });
-  }
-
-  const value = Number(req.body.value);
-  if (!Number.isFinite(value) || value < 0) {
-    return res.status(400).json({ error: 'Valor inválido para a reserva' });
-  }
-
-  if (!SHEET_ID) {
-    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
-  }
-
-  try {
-    const sheets = await getSheetsClient();
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
-      range: `${RESERVE_REAL_CELL}:${RESERVE_REAL_CELL}`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [[value]] },
-    });
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Falha ao atualizar reserva', error);
-    res.status(500).json({ error: 'Não foi possível atualizar a reserva' });
-  }
-});
-
 app.post('/api/counters', async (req, res) => {
   if (typeof req.body !== 'object') {
     return res.status(400).json({ error: 'Corpo da requisição inválido' });
@@ -324,49 +226,6 @@ async function fetchExpenseEntries() {
       };
     })
     .filter(Boolean);
-}
-
-async function fetchIncomeEntries() {
-  const sheets = await getSheetsClient();
-  const { data } = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: `${INCOME_TAB}!${INCOME_RANGE}`,
-  });
-
-  return (data.values || [])
-    .map((row = []) => {
-      const description = row[0]?.trim() || '';
-      const amount = parseNumber(row[1]);
-      const date = row[2]?.trim() || '';
-      if (!date && !amount && !description) {
-        return null;
-      }
-      if (!date && !amount) {
-        return null;
-      }
-      return { description, amount, date };
-    })
-    .filter(Boolean);
-}
-
-async function readReserveValues() {
-  const sheets = await getSheetsClient();
-  const [realResp, baseResp] = await Promise.all([
-    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${RESERVE_REAL_CELL}:${RESERVE_REAL_CELL}` }),
-    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${RESERVE_BASE_CELL}:${RESERVE_BASE_CELL}` }),
-  ]);
-
-  const real = parseNumber(realResp.data.values?.[0]?.[0]);
-  const base = parseNumber(baseResp.data.values?.[0]?.[0]);
-  return { real, base };
-}
-
-function groupTotalsByMonth(entries) {
-  return entries.reduce((acc, entry) => {
-    if (!entry.monthKey) return acc;
-    acc[entry.monthKey] = (acc[entry.monthKey] || 0) + entry.amount;
-    return acc;
-  }, {});
 }
 
 function getMonthKey(dateString) {
