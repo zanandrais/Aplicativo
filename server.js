@@ -31,8 +31,8 @@ const INCOME_START_ROW = Number(process.env.INCOME_START_ROW ?? 8);
 const INCOME_END_ROW = Number(process.env.INCOME_END_ROW ?? 200);
 const INCOME_RANGE = process.env.INCOME_RANGE || `AD${INCOME_START_ROW}:AF${INCOME_END_ROW}`;
 
-const RESERVE_REAL_CELL = process.env.RESERVE_REAL_CELL || 'AE5';
-const RESERVE_BASE_CELL = process.env.RESERVE_BASE_CELL || 'AE6';
+const RESERVE_REAL_CELL = process.env.RESERVE_REAL_CELL || 'AE2';
+const RESERVE_BASE_CELL = process.env.RESERVE_BASE_CELL || 'AE3';
 
 const CATEGORY_CONFIG = {
   sacolao: {
@@ -307,18 +307,23 @@ async function fetchExpenseEntries() {
     range: `${EXPENSES_TAB}!${EXPENSES_RANGE}`,
   });
 
-  return (data.values || []).map((row = [], index) => {
-    const date = row[0] || '';
-    const description = row[1] || '';
-    const amount = Number(row[2]) || 0;
-    return {
-      rowIndex: EXPENSES_START_ROW + index,
-      date,
-      description,
-      amount,
-      monthKey: getMonthKey(date),
-    };
-  }).filter((entry) => entry.date || entry.description || entry.amount);
+  return (data.values || [])
+    .map((row = [], index) => {
+      const date = row[0] || '';
+      const description = row[1] || '';
+      const amount = parseNumber(row[2]);
+      if (!date && !description && amount === 0) {
+        return null;
+      }
+      return {
+        rowIndex: EXPENSES_START_ROW + index,
+        date,
+        description,
+        amount,
+        monthKey: getMonthKey(date),
+      };
+    })
+    .filter(Boolean);
 }
 
 async function fetchIncomeEntries() {
@@ -330,7 +335,7 @@ async function fetchIncomeEntries() {
 
   return (data.values || []).map((row = []) => ({
     description: row[0] || '',
-    amount: row[1] || '',
+    amount: parseNumber(row[1]),
     date: row[2] || '',
   }));
 }
@@ -342,8 +347,8 @@ async function readReserveValues() {
     sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${RESERVE_BASE_CELL}:${RESERVE_BASE_CELL}` }),
   ]);
 
-  const real = Number(realResp.data.values?.[0]?.[0]) || 0;
-  const base = Number(baseResp.data.values?.[0]?.[0]) || 0;
+  const real = parseNumber(realResp.data.values?.[0]?.[0]);
+  const base = parseNumber(baseResp.data.values?.[0]?.[0]);
   return { real, base };
 }
 
@@ -360,4 +365,14 @@ function getMonthKey(dateString) {
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return '';
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function parseNumber(value) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+  if (!value) return 0;
+  const cleaned = String(value).replace(/[^\d,-]/g, '').replace('.', '').replace(',', '.');
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
