@@ -69,7 +69,8 @@ app.get('/api/expenses', async (_req, res) => {
       range,
     });
 
-    const entries = (data.values || []).map((row) => ({
+    const entries = (data.values || []).map((row = [], index) => ({
+      rowIndex: EXPENSES_START_ROW + index,
       date: row[0] || '',
       description: row[1] || '',
       amount: row[2] || '',
@@ -113,6 +114,33 @@ app.post('/api/expenses', async (req, res) => {
   } catch (error) {
     console.error('Falha ao salvar gasto no Google Sheets', error);
     res.status(500).json({ error: 'Falha ao salvar o gasto' });
+  }
+});
+
+app.delete('/api/expenses/:rowIndex', async (req, res) => {
+  const rowIndex = Number(req.params.rowIndex);
+  if (!Number.isInteger(rowIndex) || rowIndex < EXPENSES_START_ROW || rowIndex > EXPENSES_END_ROW) {
+    return res.status(400).json({ error: 'Linha inválida' });
+  }
+
+  if (!SHEET_ID) {
+    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
+  }
+
+  try {
+    const sheets = await getSheetsClient();
+    const range = `${EXPENSES_TAB}!A${rowIndex}:C${rowIndex}`;
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [['', '', '']] },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Falha ao remover gasto', error);
+    res.status(500).json({ error: 'Não foi possível remover o lançamento' });
   }
 });
 

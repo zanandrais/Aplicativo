@@ -21,21 +21,31 @@
         </nav>
       </header>
 
-      <section class="expenses-table">
-        <div class="expenses-table__actions">
+      <section class="expenses-panel">
+        <div class="expenses-panel__filters">
+          <label class="expenses-filter">
+            <span>Mês</span>
+            <select id="month-filter"></select>
+          </label>
+          <div class="expenses-summary">
+            <span>Total do mês:</span>
+            <strong data-expenses-total>R$ 0,00</strong>
+          </div>
           <button class="ghost-btn" type="button" id="reload-expenses">Atualizar lista</button>
         </div>
+
         <table>
           <thead>
             <tr>
               <th>Data</th>
               <th>Descrição</th>
               <th>Valor (R$)</th>
+              <th></th>
             </tr>
           </thead>
           <tbody data-expenses-list>
             <tr>
-              <td colspan="3">Carregando dados...</td>
+              <td colspan="4">Carregando dados...</td>
             </tr>
           </tbody>
         </table>
