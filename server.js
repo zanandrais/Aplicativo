@@ -13,6 +13,14 @@ const DISPENSA_TAB = process.env.DISPENSA_TAB || INVENTORY_TAB;
 const DISPENSA_COLUMN = process.env.DISPENSA_COLUMN || 'K';
 const DISPENSA_START_ROW = Number(process.env.DISPENSA_START_ROW ?? 5);
 
+const ACOUGUE_TAB = process.env.ACOUGUE_TAB || INVENTORY_TAB;
+const ACOUGUE_COLUMN = process.env.ACOUGUE_COLUMN || 'P';
+const ACOUGUE_START_ROW = Number(process.env.ACOUGUE_START_ROW ?? 5);
+
+const LIMPEZA_TAB = process.env.LIMPEZA_TAB || INVENTORY_TAB;
+const LIMPEZA_COLUMN = process.env.LIMPEZA_COLUMN || 'U';
+const LIMPEZA_START_ROW = Number(process.env.LIMPEZA_START_ROW ?? 5);
+
 const CATEGORY_CONFIG = {
   sacolao: {
     tab: INVENTORY_TAB,
@@ -23,6 +31,16 @@ const CATEGORY_CONFIG = {
     tab: DISPENSA_TAB,
     column: DISPENSA_COLUMN,
     startRow: DISPENSA_START_ROW,
+  },
+  acougue: {
+    tab: ACOUGUE_TAB,
+    column: ACOUGUE_COLUMN,
+    startRow: ACOUGUE_START_ROW,
+  },
+  limpeza: {
+    tab: LIMPEZA_TAB,
+    column: LIMPEZA_COLUMN,
+    startRow: LIMPEZA_START_ROW,
   },
 };
 

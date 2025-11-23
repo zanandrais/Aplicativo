@@ -19,7 +19,7 @@ Aplicação Node + Express com front-end Flexbox que exibe listas do Google Shee
    ```bash
    npm start
    ```
-4. Acesse http://localhost:3000 (Sacolão) ou http://localhost:3000/dispensa.html.
+4. Acesse http://localhost:3000 (Sacolão), http://localhost:3000/dispensa.html, http://localhost:3000/acougue.html ou http://localhost:3000/limpeza.html.
 
 ## Deploy no Render
 1. Faça o upload deste diretório para um repositório Git.
@@ -34,7 +34,7 @@ Aplicação Node + Express com front-end Flexbox que exibe listas do Google Shee
    - Opcionais para cada categoria conforme tabela abaixo
 5. Deploy e abra a URL gerada.
 
-## Sincronização com Google Sheets (Sacolão e Dispensa)
+## Sincronização com Google Sheets (Sacolão, Dispensa, Açougue e Limpeza)
 | Variável | Descrição |
 | --- | --- |
 | `GOOGLE_SHEETS_ID` | ID da planilha (ex.: `1K80WnIJAtTTQpbGKQF5QJk5FNfaAl5ks5nmCI7y9o2s`). |
@@ -44,6 +44,12 @@ Aplicação Node + Express com front-end Flexbox que exibe listas do Google Shee
 | `DISPENSA_TAB` (opcional) | Aba usada na categoria **Dispensa** (padrão igual ao valor de `GOOGLE_SHEETS_TAB`). |
 | `DISPENSA_COLUMN` (opcional) | Coluna usada na categoria **Dispensa** (padrão `K`). |
 | `DISPENSA_START_ROW` (opcional) | Primeira linha da categoria **Dispensa** (padrão `5`). |
+| `ACOUGUE_TAB` (opcional) | Aba utilizada pela categoria **Açougue** (padrão igual a `GOOGLE_SHEETS_TAB`). |
+| `ACOUGUE_COLUMN` (opcional) | Coluna onde o Açougue grava os valores (padrão `P`). |
+| `ACOUGUE_START_ROW` (opcional) | Primeira linha utilizada no Açougue (padrão `5`). |
+| `LIMPEZA_TAB` (opcional) | Aba utilizada pela categoria **Limpeza** (padrão igual a `GOOGLE_SHEETS_TAB`). |
+| `LIMPEZA_COLUMN` (opcional) | Coluna onde Limpeza grava valores (padrão `U`). |
+| `LIMPEZA_START_ROW` (opcional) | Primeira linha utilizada em Limpeza (padrão `5`). |
 | `GOOGLE_SHEETS_CREDENTIALS` | JSON da Service Account com acesso de edição. |
 
 **Gerando o JSON**
@@ -52,7 +58,7 @@ Aplicação Node + Express com front-end Flexbox que exibe listas do Google Shee
 3. Compartilhe a planilha com o e-mail da Service Account (permissão de editor).
 4. Use `Get-Content <arquivo>.json -Raw` para preencher `GOOGLE_SHEETS_CREDENTIALS`.
 
-Quando configurado, a página principal (`/` ou `index.html`) lê automaticamente os nomes/quantidades em `E5:F17` (Sacolão) e envia os novos valores para `inventario!F5:F17`. A página `dispensa.html` faz o mesmo para `J5:K50` e escreve em `inventario!K5:K50`. Links no topo das páginas permitem alternar rapidamente entre as categorias.
+Quando configurado, a página principal (`/` ou `index.html`) lê automaticamente os nomes/quantidades em `E5:F17` (Sacolão) e envia os novos valores para `inventario!F5:F17`. As páginas `dispensa.html`, `acougue.html` e `limpeza.html` fazem o mesmo para `J5:K50`, `O5:P50` e `T5:U50`, escrevendo respectivamente em `K`, `P` e `U`. Links no topo de todas as páginas permitem alternar entre as quatro categorias.
 
 ### Script manual (atualiza valores em lote)
 ```bash
