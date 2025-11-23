@@ -27,8 +27,8 @@ const EXPENSES_END_ROW = Number(process.env.EXPENSES_END_ROW ?? 200);
 const EXPENSES_RANGE = process.env.EXPENSES_RANGE || `A${EXPENSES_START_ROW}:C${EXPENSES_END_ROW}`;
 
 const INCOME_TAB = process.env.INCOME_TAB || INVENTORY_TAB;
-const INCOME_START_ROW = Number(process.env.INCOME_START_ROW ?? 8);
-const INCOME_END_ROW = Number(process.env.INCOME_END_ROW ?? 200);
+const INCOME_START_ROW = Number(process.env.INCOME_START_ROW ?? 5);
+const INCOME_END_ROW = Number(process.env.INCOME_END_ROW ?? 100);
 const INCOME_RANGE = process.env.INCOME_RANGE || `AD${INCOME_START_ROW}:AF${INCOME_END_ROW}`;
 
 const RESERVE_REAL_CELL = process.env.RESERVE_REAL_CELL || 'AE2';
@@ -333,11 +333,20 @@ async function fetchIncomeEntries() {
     range: `${INCOME_TAB}!${INCOME_RANGE}`,
   });
 
-  return (data.values || []).map((row = []) => ({
-    description: row[0] || '',
-    amount: parseNumber(row[1]),
-    date: row[2] || '',
-  }));
+  return (data.values || [])
+    .map((row = []) => {
+      const description = row[0]?.trim() || '';
+      const amount = parseNumber(row[1]);
+      const date = row[2]?.trim() || '';
+      if (!date && !amount && !description) {
+        return null;
+      }
+      if (!date && !amount) {
+        return null;
+      }
+      return { description, amount, date };
+    })
+    .filter(Boolean);
 }
 
 async function readReserveValues() {
