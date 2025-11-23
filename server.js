@@ -21,6 +21,11 @@ const LIMPEZA_TAB = process.env.LIMPEZA_TAB || INVENTORY_TAB;
 const LIMPEZA_COLUMN = process.env.LIMPEZA_COLUMN || 'U';
 const LIMPEZA_START_ROW = Number(process.env.LIMPEZA_START_ROW ?? 5);
 
+const EXPENSES_TAB = process.env.EXPENSES_TAB || INVENTORY_TAB;
+const EXPENSES_START_ROW = Number(process.env.EXPENSES_START_ROW ?? 5);
+const EXPENSES_END_ROW = Number(process.env.EXPENSES_END_ROW ?? 200);
+const EXPENSES_RANGE = process.env.EXPENSES_RANGE || `A${EXPENSES_START_ROW}:C${EXPENSES_END_ROW}`;
+
 const CATEGORY_CONFIG = {
   sacolao: {
     tab: INVENTORY_TAB,
@@ -49,6 +54,66 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
+});
+
+app.get('/api/expenses', async (_req, res) => {
+  if (!SHEET_ID) {
+    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
+  }
+
+  try {
+    const sheets = await getSheetsClient();
+    const range = `${EXPENSES_TAB}!${EXPENSES_RANGE}`;
+    const { data } = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range,
+    });
+
+    const entries = (data.values || []).map((row) => ({
+      date: row[0] || '',
+      description: row[1] || '',
+      amount: row[2] || '',
+    }));
+
+    res.json({ entries });
+  } catch (error) {
+    console.error('Falha ao carregar gastos', error);
+    res.status(500).json({ error: 'Não foi possível recuperar os gastos' });
+  }
+});
+
+app.post('/api/expenses', async (req, res) => {
+  if (typeof req.body !== 'object') {
+    return res.status(400).json({ error: 'Corpo da requisição inválido' });
+  }
+
+  const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
+  const amount = Number(req.body.amount);
+  const date = req.body.date ? String(req.body.date) : new Date().toISOString().slice(0, 10);
+
+  if (!description || !Number.isFinite(amount) || amount <= 0) {
+    return res.status(400).json({ error: 'Descrição e valor são obrigatórios' });
+  }
+
+  if (!SHEET_ID) {
+    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
+  }
+
+  try {
+    const sheets = await getSheetsClient();
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: `${EXPENSES_TAB}!${EXPENSES_RANGE}`,
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: [[date, description, amount]] },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Falha ao salvar gasto no Google Sheets', error);
+    res.status(500).json({ error: 'Falha ao salvar o gasto' });
+  }
 });
 
 app.post('/api/counters', async (req, res) => {

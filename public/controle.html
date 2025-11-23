@@ -1,0 +1,46 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Controle de Gastos</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="counter-board expenses-board" data-expenses-range="A5:C200">
+      <header class="counter-board__header">
+        <h1>Registro de Gastos</h1>
+        <p>Visualize os lançamentos salvos no intervalo A5:C200.</p>
+        <nav class="category-nav">
+          <span>Acessar:</span>
+          <a class="category-nav__link" href="index.html">Registrar gasto</a>
+          <a class="category-nav__link" href="sacolao.html">Sacolão</a>
+          <a class="category-nav__link" href="dispensa.html">Dispensa</a>
+          <a class="category-nav__link" href="acougue.html">Açougue</a>
+          <a class="category-nav__link" href="limpeza.html">Limpeza</a>
+        </nav>
+      </header>
+
+      <section class="expenses-table">
+        <div class="expenses-table__actions">
+          <button class="ghost-btn" type="button" id="reload-expenses">Atualizar lista</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Valor (R$)</th>
+            </tr>
+          </thead>
+          <tbody data-expenses-list>
+            <tr>
+              <td colspan="3">Carregando dados...</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+    <script type="module" src="controle.js"></script>
+  </body>
+</html>

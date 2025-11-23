@@ -3,24 +3,49 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Equipe Flex - Sacolão</title>
+    <title>Controle de Gastos - Equipe Flex</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="counter-board" data-csv-range="E5:F17" data-category="sacolao">
-      <header class="counter-board__header">
-        <h1>Equipe Flex — Sacolão</h1>
-        <p>Use os botões + e - para ajustar os pontos de cada pessoa.</p>
+    <main class="home-board">
+      <header class="home-header">
+        <div>
+          <h1>Controle de Gastos</h1>
+          <p>Registre rapidamente novos gastos e navegue pelas categorias de inventário.</p>
+        </div>
         <nav class="category-nav">
-          <span>Categorias:</span>
+          <span>Acessar categorias:</span>
+          <a class="category-nav__link" href="sacolao.html">Sacolão</a>
           <a class="category-nav__link" href="dispensa.html">Dispensa</a>
           <a class="category-nav__link" href="acougue.html">Açougue</a>
           <a class="category-nav__link" href="limpeza.html">Limpeza</a>
+          <a class="category-nav__link" href="controle.html">Controle de Gastos</a>
         </nav>
       </header>
-      <p class="counter-status" data-status aria-live="polite">Carregando nomes...</p>
-      <ul class="counter-list" aria-live="polite"></ul>
+
+      <section class="expense-card">
+        <h2>Novo gasto</h2>
+        <form id="expense-form" class="expense-form">
+          <label class="expense-field">
+            <span>Data</span>
+            <div class="expense-date-input">
+              <input type="date" id="expense-date" required />
+              <button class="ghost-btn" type="button" id="expense-today">Hoje</button>
+            </div>
+          </label>
+          <label class="expense-field">
+            <span>Descrição</span>
+            <input type="text" id="expense-description" placeholder="Ex.: Compra mercado" required />
+          </label>
+          <label class="expense-field">
+            <span>Valor (R$)</span>
+            <input type="number" id="expense-amount" step="0.01" min="0" placeholder="0,00" required />
+          </label>
+          <button class="primary-btn" type="submit">Salvar gasto</button>
+        </form>
+        <p class="expense-feedback" data-feedback aria-live="polite"></p>
+      </section>
     </main>
-    <script type="module" src="app.js"></script>
+    <script type="module" src="home.js"></script>
   </body>
 </html>
