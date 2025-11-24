@@ -94,15 +94,7 @@ app.post('/api/expenses', async (req, res) => {
   }
 
   try {
-    const sheets = await getSheetsClient();
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
-      range: `${EXPENSES_TAB}!${EXPENSES_RANGE}`,
-      valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
-      requestBody: { values: [[date, description, amount, normalizedType]] },
-    });
-
+    await appendExpenseRow([date, description, amount, normalizedType]);
     res.json({ success: true });
   } catch (error) {
     console.error('Falha ao salvar gasto', error);
@@ -122,12 +114,12 @@ app.delete('/api/expenses/:rowIndex', async (req, res) => {
 
   try {
     const sheets = await getSheetsClient();
-    const range = `${EXPENSES_TAB}!A${rowIndex}:C${rowIndex}`;
+    const range = `${EXPENSES_TAB}!A${rowIndex}:D${rowIndex}`;
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range,
       valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [['', '', '']] },
+      requestBody: { values: [['', '', '', '']] },
     });
 
     res.json({ success: true });
@@ -274,4 +266,27 @@ function parseNumber(value) {
   const cleaned = String(value).replace(/[^\d,-]/g, '').replace('.', '').replace(',', '.');
   const parsed = Number(cleaned);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function appendExpenseRow(rowValues) {
+  const sheets = await getSheetsClient();
+  const occupiedRange = `${EXPENSES_TAB}!A${EXPENSES_START_ROW}:A${EXPENSES_END_ROW}`;
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: occupiedRange,
+  });
+
+  const usedRows = existing.data?.values?.length ?? 0;
+  const nextRow = EXPENSES_START_ROW + usedRows;
+  if (nextRow > EXPENSES_END_ROW) {
+    throw new Error('Intervalo de despesas (A5:D200) está cheio.');
+  }
+
+  const writeRange = `${EXPENSES_TAB}!A${nextRow}:D${nextRow}`;
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: writeRange,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [rowValues] },
+  });
 }
