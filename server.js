@@ -94,7 +94,7 @@ app.post('/api/expenses', async (req, res) => {
   }
 
   try {
-    await appendExpenseRow([date, description, amount, normalizedType]);
+    await upsertExpenseRow([date, description, amount, normalizedType]);
     res.json({ success: true });
   } catch (error) {
     console.error('Falha ao salvar gasto', error);
@@ -113,15 +113,7 @@ app.delete('/api/expenses/:rowIndex', async (req, res) => {
   }
 
   try {
-    const sheets = await getSheetsClient();
-    const range = `${EXPENSES_TAB}!A${rowIndex}:D${rowIndex}`;
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
-      range,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [['', '', '', '']] },
-    });
-
+    await clearExpenseRow(rowIndex);
     res.json({ success: true });
   } catch (error) {
     console.error('Falha ao excluir gasto', error);

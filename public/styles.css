@@ -339,8 +339,16 @@ body {
   font-weight: 600;
 }
 
-.expenses-panel td:last-child {
+.expenses-panel td.value-cell {
   font-weight: 600;
+}
+
+.expenses-panel td.actions-cell {
+  text-align: right;
+}
+
+.expenses-panel td.actions-cell button {
+  margin-left: auto;
 }
 
 @media (max-width: 520px) {
