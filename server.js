@@ -268,16 +268,20 @@ function parseNumber(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-async function appendExpenseRow(rowValues) {
+async function upsertExpenseRow(rowValues) {
   const sheets = await getSheetsClient();
-  const occupiedRange = `${EXPENSES_TAB}!A${EXPENSES_START_ROW}:A${EXPENSES_END_ROW}`;
-  const existing = await sheets.spreadsheets.values.get({
+  const fullRange = `${EXPENSES_TAB}!A${EXPENSES_START_ROW}:D${EXPENSES_END_ROW}`;
+  const { data } = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: occupiedRange,
+    range: fullRange,
+    majorDimension: 'ROWS',
   });
 
-  const usedRows = existing.data?.values?.length ?? 0;
-  const nextRow = EXPENSES_START_ROW + usedRows;
+  const rows = data.values || [];
+  const relativeIndex = rows.findIndex((row) => isRowEmpty(row));
+  const targetIndex = relativeIndex === -1 ? rows.length : relativeIndex;
+  const nextRow = EXPENSES_START_ROW + targetIndex;
+
   if (nextRow > EXPENSES_END_ROW) {
     throw new Error('Intervalo de despesas (A5:D200) está cheio.');
   }
@@ -289,4 +293,17 @@ async function appendExpenseRow(rowValues) {
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [rowValues] },
   });
+}
+
+async function clearExpenseRow(rowIndex) {
+  const sheets = await getSheetsClient();
+  await sheets.spreadsheets.values.clear({
+    spreadsheetId: SHEET_ID,
+    range: `${EXPENSES_TAB}!A${rowIndex}:D${rowIndex}`,
+  });
+}
+
+function isRowEmpty(row = []) {
+  if (!row || !row.length) return true;
+  return row.every((cell) => !String(cell ?? '').trim());
 }
