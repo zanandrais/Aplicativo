@@ -27,9 +27,25 @@
             <span>Mês</span>
             <select id="month-filter"></select>
           </label>
+          <label class="expenses-filter">
+            <span>Categoria</span>
+            <select id="category-filter">
+              <option value="">Todas</option>
+              <option value="essencial">Essencial</option>
+              <option value="nao_essencial">Não essencial</option>
+            </select>
+          </label>
           <div class="expenses-summary">
             <span>Total do mês:</span>
             <strong data-expenses-total>R$ 0,00</strong>
+          </div>
+          <div class="expenses-summary">
+            <span>Meta:</span>
+            <strong data-expenses-meta>R$ 0,00</strong>
+          </div>
+          <div class="expenses-summary">
+            <span>Saldo:</span>
+            <strong data-expenses-balance>R$ 0,00</strong>
           </div>
           <button class="ghost-btn" type="button" id="reload-expenses">Atualizar lista</button>
         </div>

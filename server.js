@@ -24,7 +24,9 @@ const LIMPEZA_START_ROW = Number(process.env.LIMPEZA_START_ROW ?? 5);
 const EXPENSES_TAB = process.env.EXPENSES_TAB || INVENTORY_TAB;
 const EXPENSES_START_ROW = Number(process.env.EXPENSES_START_ROW ?? 5);
 const EXPENSES_END_ROW = Number(process.env.EXPENSES_END_ROW ?? 200);
-const EXPENSES_RANGE = process.env.EXPENSES_RANGE || `A${EXPENSES_START_ROW}:C${EXPENSES_END_ROW}`;
+const EXPENSES_RANGE = process.env.EXPENSES_RANGE || `A${EXPENSES_START_ROW}:D${EXPENSES_END_ROW}`;
+const META_ESSENCIAL_CELL = process.env.META_ESSENCIAL_CELL || 'Z5';
+const META_NAO_ESSENCIAL_CELL = process.env.META_NAO_ESSENCIAL_CELL || 'Z7';
 
 const CATEGORY_CONFIG = {
   sacolao: {
@@ -63,7 +65,9 @@ app.get('/api/expenses', async (_req, res) => {
 
   try {
     const entries = await fetchExpenseEntries();
-    res.json({ entries });
+    const totals = groupTotalsByMonthAndCategory(entries);
+    const metaGoals = await readMetaGoals();
+    res.json({ entries, categoryTotals: totals, meta: metaGoals });
   } catch (error) {
     console.error('Falha ao carregar gastos', error);
     res.status(500).json({ error: 'Não foi possível recuperar os gastos' });
@@ -78,6 +82,8 @@ app.post('/api/expenses', async (req, res) => {
   const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
   const amount = Number(req.body.amount);
   const date = req.body.date ? String(req.body.date) : new Date().toISOString().slice(0, 10);
+  const type = typeof req.body.type === 'string' ? req.body.type.trim().toLowerCase() : 'essencial';
+  const normalizedType = type === 'nao_essencial' ? 'nao_essencial' : 'essencial';
 
   if (!description || !Number.isFinite(amount) || amount <= 0) {
     return res.status(400).json({ error: 'Descrição e valor são obrigatórios' });
@@ -94,7 +100,7 @@ app.post('/api/expenses', async (req, res) => {
       range: `${EXPENSES_TAB}!${EXPENSES_RANGE}`,
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
-      requestBody: { values: [[date, description, amount]] },
+      requestBody: { values: [[date, description, amount, normalizedType]] },
     });
 
     res.json({ success: true });
@@ -214,6 +220,8 @@ async function fetchExpenseEntries() {
       const date = row[0] || '';
       const description = row[1] || '';
       const amount = parseNumber(row[2]);
+      const typeRaw = (row[3] || '').toString().toLowerCase();
+      const type = typeRaw === 'nao_essencial' ? 'nao_essencial' : 'essencial';
       if (!date && !description && amount === 0) {
         return null;
       }
@@ -222,10 +230,33 @@ async function fetchExpenseEntries() {
         date,
         description,
         amount,
+        type,
         monthKey: getMonthKey(date),
       };
     })
     .filter(Boolean);
+}
+
+async function readMetaGoals() {
+  const sheets = await getSheetsClient();
+  const [essencialResp, naoEssencialResp] = await Promise.all([
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${META_ESSENCIAL_CELL}:${META_ESSENCIAL_CELL}` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${META_NAO_ESSENCIAL_CELL}:${META_NAO_ESSENCIAL_CELL}` }),
+  ]);
+  return {
+    essencial: parseNumber(essencialResp.data.values?.[0]?.[0]),
+    nao_essencial: parseNumber(naoEssencialResp.data.values?.[0]?.[0]),
+  };
+}
+
+function groupTotalsByMonthAndCategory(entries) {
+  return entries.reduce((acc, entry) => {
+    if (!entry.monthKey) return acc;
+    const bucket = acc[entry.monthKey] || { essencial: 0, nao_essencial: 0 };
+    bucket[entry.type] = (bucket[entry.type] || 0) + entry.amount;
+    acc[entry.monthKey] = bucket;
+    return acc;
+  }, {});
 }
 
 function getMonthKey(dateString) {

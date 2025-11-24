@@ -128,6 +128,14 @@ body {
   font-size: 1rem;
 }
 
+.expense-field select {
+  border: 1px solid #cfd4dc;
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+  font-size: 1rem;
+  background: #fff;
+}
+
 .expense-date-input {
   display: flex;
   gap: 0.5rem;

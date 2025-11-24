@@ -3,6 +3,7 @@ const dateInput = document.querySelector('#expense-date');
 const todayButton = document.querySelector('#expense-today');
 const descriptionInput = document.querySelector('#expense-description');
 const amountInput = document.querySelector('#expense-amount');
+const typeSelect = document.querySelector('#expense-type');
 const feedback = document.querySelector('[data-feedback]');
 
 init();
@@ -49,6 +50,7 @@ function buildPayload() {
   const description = descriptionInput?.value.trim();
   const amountValue = amountInput?.value.trim();
   const dateValue = dateInput?.value;
+  const typeValue = typeSelect?.value || 'essencial';
 
   if (!description || !amountValue || !dateValue) {
     setFeedback('Preencha todos os campos.', 'error');
@@ -61,7 +63,7 @@ function buildPayload() {
     return null;
   }
 
-  return { description, amount, date: dateValue };
+  return { description, amount, date: dateValue, type: typeValue };
 }
 
 function setToday() {
