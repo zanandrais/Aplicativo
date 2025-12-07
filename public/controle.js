@@ -59,7 +59,7 @@ function normalizeEntry(entry) {
     description: entry.description || '',
     amount: Number.isFinite(amount) ? amount : 0,
     type: entry.type || 'essencial',
-    monthKey: getMonthKey(entry.date),
+    monthKey: getCustomMonthKey(entry.date),
   };
 }
 
@@ -68,7 +68,7 @@ function buildMonthOptions() {
   const keys = Array.from(new Set(state.entries.map((entry) => entry.monthKey).filter(Boolean)))
     .sort()
     .reverse();
-  const current = getMonthKey(new Date().toISOString().slice(0, 10));
+  const current = getCustomMonthKey(new Date().toISOString().slice(0, 10));
   if (current && !keys.includes(current)) {
     keys.unshift(current);
   }
@@ -185,6 +185,23 @@ function formatMonthLabel(key) {
   const [year, month] = key.split('-');
   const date = new Date(Number(year), Number(month) - 1, 1);
   return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+}
+
+function getCustomMonthKey(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '';
+  let year = date.getFullYear();
+  let month = date.getMonth(); // 0-based
+  const day = date.getDate();
+  if (day >= 24) {
+    month += 1;
+    if (month === 12) {
+      month = 0;
+      year += 1;
+    }
+  }
+  return `${year}-${String(month + 1).padStart(2, '0')}`;
 }
 
 function escapeHtml(value = '') {

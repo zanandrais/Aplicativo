@@ -25,9 +25,9 @@ const EXPENSES_TAB = process.env.EXPENSES_TAB || INVENTORY_TAB;
 const EXPENSES_START_ROW = Number(process.env.EXPENSES_START_ROW ?? 5);
 const EXPENSES_END_ROW = Number(process.env.EXPENSES_END_ROW ?? 200);
 const EXPENSES_RANGE = process.env.EXPENSES_RANGE || `A${EXPENSES_START_ROW}:D${EXPENSES_END_ROW}`;
-const META_ESSENCIAL_CELL = process.env.META_ESSENCIAL_CELL || 'Z5';
-const META_NAO_ESSENCIAL_CELL = process.env.META_NAO_ESSENCIAL_CELL || 'Z7';
-const META_CONTAS_CELL = process.env.META_CONTAS_CELL || 'Z9';
+const META_ESSENCIAL_CELL = process.env.META_ESSENCIAL_CELL || 'A3';
+const META_NAO_ESSENCIAL_CELL = process.env.META_NAO_ESSENCIAL_CELL || 'B3';
+const META_CONTAS_CELL = process.env.META_CONTAS_CELL || 'C3';
 
 const CATEGORY_CONFIG = {
   sacolao: {
@@ -218,7 +218,7 @@ async function fetchExpenseEntries() {
         description,
         amount,
         type,
-        monthKey: getMonthKey(date),
+        monthKey: getCustomMonthKey(date),
       };
     })
     .filter(Boolean);
@@ -248,11 +248,21 @@ function groupTotalsByMonthAndCategory(entries) {
   }, {});
 }
 
-function getMonthKey(dateString) {
+function getCustomMonthKey(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return '';
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  let year = date.getFullYear();
+  let month = date.getMonth(); // 0-based
+  const day = date.getDate();
+  if (day >= 24) {
+    month += 1;
+    if (month === 12) {
+      month = 0;
+      year += 1;
+    }
+  }
+  return `${year}-${String(month + 1).padStart(2, '0')}`;
 }
 
 function parseNumber(value) {
