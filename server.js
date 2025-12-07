@@ -230,9 +230,18 @@ async function fetchExpenseEntries() {
 async function readMetaGoals() {
   const sheets = await getSheetsClient();
   const [essencialResp, naoEssencialResp, contasResp] = await Promise.all([
-    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${META_ESSENCIAL_CELL}:${META_ESSENCIAL_CELL}` }),
-    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${META_NAO_ESSENCIAL_CELL}:${META_NAO_ESSENCIAL_CELL}` }),
-    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${META_CONTAS_CELL}:${META_CONTAS_CELL}` }),
+    sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${EXPENSES_TAB}!${META_ESSENCIAL_CELL}:${META_ESSENCIAL_CELL}`,
+    }),
+    sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${EXPENSES_TAB}!${META_NAO_ESSENCIAL_CELL}:${META_NAO_ESSENCIAL_CELL}`,
+    }),
+    sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${EXPENSES_TAB}!${META_CONTAS_CELL}:${META_CONTAS_CELL}`,
+    }),
   ]);
   return {
     essencial: parseNumber(essencialResp.data.values?.[0]?.[0]),
