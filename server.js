@@ -167,6 +167,56 @@ app.post('/api/counters', async (req, res) => {
   }
 });
 
+app.post('/api/inventory', async (req, res) => {
+  if (typeof req.body !== 'object') {
+    return res.status(400).json({ error: 'Corpo da requisição inválido' });
+  }
+
+  const category = String(req.body.category || 'sacolao').toLowerCase();
+  const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+  const quantity = Number(req.body.quantity ?? 0);
+
+  if (!name) {
+    return res.status(400).json({ error: 'Nome é obrigatório' });
+  }
+  if (!Number.isFinite(quantity) || quantity < 0) {
+    return res.status(400).json({ error: 'Quantidade inválida' });
+  }
+  if (!SHEET_ID) {
+    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
+  }
+
+  const targetCategory = CATEGORY_CONFIG[category];
+  if (!targetCategory) {
+    return res.status(400).json({ error: 'Categoria desconhecida' });
+  }
+
+  let nameColumn;
+  try {
+    nameColumn = getPreviousColumn(targetCategory.column);
+  } catch (err) {
+    return res.status(400).json({ error: 'Coluna inválida para a categoria' });
+  }
+
+  try {
+    const sheets = await getSheetsClient();
+    const range = `${targetCategory.tab}!${nameColumn}${targetCategory.startRow}:${targetCategory.column}`;
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range,
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: [[name, quantity]] },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Falha ao inserir item no inventário', error);
+    res.status(500).json({ error: 'Falha ao salvar item na planilha' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
@@ -325,4 +375,12 @@ async function clearExpenseRow(rowIndex) {
 function isRowEmpty(row = []) {
   if (!row || !row.length) return true;
   return row.every((cell) => !String(cell ?? '').trim());
+}
+
+function getPreviousColumn(columnLetter) {
+  const upper = String(columnLetter || '').trim().toUpperCase();
+  if (!/^[A-Z]$/.test(upper) || upper === 'A') {
+    throw new Error('Coluna inválida');
+  }
+  return String.fromCharCode(upper.charCodeAt(0) - 1);
 }

@@ -21,6 +21,20 @@
         </nav>
       </header>
       <p class="counter-status" data-status aria-live="polite">Carregando nomes...</p>
+
+      <section class="counter-add">
+        <h2>Adicionar item</h2>
+        <form id="new-item-form" class="counter-add__form">
+          <label for="new-item-name">Nome</label>
+          <input id="new-item-name" name="name" required />
+
+          <label for="new-item-qty">Quantidade</label>
+          <input id="new-item-qty" name="quantity" type="number" min="0" value="0" required />
+
+          <button type="submit">Adicionar</button>
+        </form>
+      </section>
+
       <ul class="counter-list" aria-live="polite"></ul>
     </main>
     <script type="module" src="app.js"></script>

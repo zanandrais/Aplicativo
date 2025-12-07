@@ -1,4 +1,4 @@
-Ôªøconst MIN_VALUE = 0;
+const MIN_VALUE = 0;
 const SHEET_BASE_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vSknwMWFA6Akwkw3sihnQNjwJG9qAe_3dcAqevkqmf5LFKYtodqVOdJeDz7lDg0Klyi0dH24H2LH1-5/pub?gid=1183098319&single=true&output=csv&range=';
 
@@ -18,6 +18,9 @@ const state = {
 
 const listElement = document.querySelector('.counter-list');
 const statusElement = document.querySelector('[data-status]');
+const formElement = document.querySelector('#new-item-form');
+const nameInput = document.querySelector('#new-item-name');
+const qtyInput = document.querySelector('#new-item-qty');
 
 init();
 
@@ -29,14 +32,14 @@ async function init() {
 
     if (!entries.length) {
       listElement.innerHTML = '';
-      setStatus('Nenhum nome encontrado no invent√°rio.');
+      setStatus('Nenhum nome encontrado no invent·rio.');
       return;
     }
 
     renderList(entries);
     setStatus('');
   } catch (error) {
-    console.error('Erro ao carregar nomes do invent√°rio', error);
+    console.error('Erro ao carregar nomes do invent·rio', error);
     setStatus('Erro ao carregar nomes. Tente novamente mais tarde.');
   }
 }
@@ -92,7 +95,7 @@ function createCounterMarkup(entry, index) {
       <span class="counter-item__name">${safeName}</span>
       <div class="counter-item__controls" data-id="${index}">
         <button class="counter-btn" data-direction="down" aria-label="Diminuir valor para ${safeName}">-</button>
-        <output class="counter-value" aria-label="Pontua√ß√£o de ${safeName}">${startValue}</output>
+        <output class="counter-value" aria-label="PontuaÁ„o de ${safeName}">${startValue}</output>
         <button class="counter-btn" data-direction="up" aria-label="Aumentar valor para ${safeName}">+</button>
       </div>
     </li>
@@ -153,7 +156,45 @@ async function persistCounter(index, value) {
     }
   } catch (error) {
     console.error('Falha ao salvar valor no Google Sheets', error);
-    setStatus('N√£o foi poss√≠vel salvar o valor na planilha. Verifique o servidor.');
+    setStatus('N„o foi possÌvel salvar o valor na planilha. Verifique o servidor.');
+  }
+}
+
+async function handleNewItem(event) {
+  event.preventDefault();
+  const name = nameInput?.value?.trim() || '';
+  const quantity = Number(qtyInput?.value ?? 0);
+
+  if (!name) {
+    setStatus('Informe um nome para adicionar.');
+    return;
+  }
+  if (!Number.isFinite(quantity) || quantity < 0) {
+    setStatus('Quantidade inv·lida.');
+    return;
+  }
+
+  setStatus('Salvando item...');
+  try {
+    const response = await fetch('/api/inventory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, quantity, category: state.category }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status}`);
+    }
+
+    if (nameInput) nameInput.value = '';
+    if (qtyInput) qtyInput.value = '0';
+
+    const entries = await fetchInventory();
+    renderList(entries);
+    setStatus('');
+  } catch (error) {
+    console.error('Falha ao adicionar item no invent·rio', error);
+    setStatus('N„o foi possÌvel adicionar o item. Verifique o servidor.');
   }
 }
 
@@ -169,3 +210,5 @@ listElement?.addEventListener('click', (event) => {
 
   updateCounter(index, direction);
 });
+
+formElement?.addEventListener('submit', handleNewItem);
