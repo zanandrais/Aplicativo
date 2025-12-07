@@ -55,6 +55,13 @@ const CATEGORY_CONFIG = {
   },
 };
 
+const INVENTORY_APPEND = {
+  sacolao: { tab: INVENTORY_TAB, startCol: 'E', endCol: 'F', startRow: 5 },
+  dispensa: { tab: DISPENSA_TAB, startCol: 'J', endCol: 'K', startRow: 5 },
+  acougue: { tab: ACOUGUE_TAB, startCol: 'O', endCol: 'P', startRow: 5 },
+  limpeza: { tab: LIMPEZA_TAB, startCol: 'T', endCol: 'U', startRow: 5 },
+};
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
