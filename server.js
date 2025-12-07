@@ -25,41 +25,22 @@ const EXPENSES_TAB = process.env.EXPENSES_TAB || INVENTORY_TAB;
 const EXPENSES_START_ROW = Number(process.env.EXPENSES_START_ROW ?? 5);
 const EXPENSES_END_ROW = Number(process.env.EXPENSES_END_ROW ?? 200);
 const EXPENSES_RANGE = process.env.EXPENSES_RANGE || `A${EXPENSES_START_ROW}:D${EXPENSES_END_ROW}`;
-// Metas padrão (ajuste via variáveis de ambiente conforme a posição real na planilha)
-// Metas (valores mostrados na planilha)
-// Ajuste via variáveis de ambiente se mudar de posição
 const META_ESSENCIAL_CELL = process.env.META_ESSENCIAL_CELL || 'A3';
 const META_NAO_ESSENCIAL_CELL = process.env.META_NAO_ESSENCIAL_CELL || 'B3';
 const META_CONTAS_CELL = process.env.META_CONTAS_CELL || 'C3';
 
 const CATEGORY_CONFIG = {
-  sacolao: {
-    tab: INVENTORY_TAB,
-    column: INVENTORY_COLUMN,
-    startRow: INVENTORY_START_ROW,
-  },
-  dispensa: {
-    tab: DISPENSA_TAB,
-    column: DISPENSA_COLUMN,
-    startRow: DISPENSA_START_ROW,
-  },
-  acougue: {
-    tab: ACOUGUE_TAB,
-    column: ACOUGUE_COLUMN,
-    startRow: ACOUGUE_START_ROW,
-  },
-  limpeza: {
-    tab: LIMPEZA_TAB,
-    column: LIMPEZA_COLUMN,
-    startRow: LIMPEZA_START_ROW,
-  },
+  sacolao: { tab: INVENTORY_TAB, column: INVENTORY_COLUMN, startRow: INVENTORY_START_ROW },
+  dispensa: { tab: DISPENSA_TAB, column: DISPENSA_COLUMN, startRow: DISPENSA_START_ROW },
+  acougue: { tab: ACOUGUE_TAB, column: ACOUGUE_COLUMN, startRow: ACOUGUE_START_ROW },
+  limpeza: { tab: LIMPEZA_TAB, column: LIMPEZA_COLUMN, startRow: LIMPEZA_START_ROW },
 };
 
 const INVENTORY_APPEND = {
-  sacolao: { tab: INVENTORY_TAB, startCol: 'E', endCol: 'F', startRow: 5 },
-  dispensa: { tab: DISPENSA_TAB, startCol: 'J', endCol: 'K', startRow: 5 },
-  acougue: { tab: ACOUGUE_TAB, startCol: 'O', endCol: 'P', startRow: 5 },
-  limpeza: { tab: LIMPEZA_TAB, startCol: 'T', endCol: 'U', startRow: 5 },
+  sacolao: { tab: INVENTORY_TAB, startCol: 'E', endCol: 'F', startRow: 5, endRow: 200 },
+  dispensa: { tab: DISPENSA_TAB, startCol: 'J', endCol: 'K', startRow: 5, endRow: 200 },
+  acougue: { tab: ACOUGUE_TAB, startCol: 'O', endCol: 'P', startRow: 5, endRow: 200 },
+  limpeza: { tab: LIMPEZA_TAB, startCol: 'T', endCol: 'U', startRow: 5, endRow: 200 },
 };
 
 app.use(express.json());
@@ -70,10 +51,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.get('/api/expenses', async (_req, res) => {
-  if (!SHEET_ID) {
-    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
-  }
-
+  if (!SHEET_ID) return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
   try {
     const entries = await fetchExpenseEntries();
     const totals = groupTotalsByMonthAndCategory(entries);
@@ -86,9 +64,7 @@ app.get('/api/expenses', async (_req, res) => {
 });
 
 app.post('/api/expenses', async (req, res) => {
-  if (typeof req.body !== 'object') {
-    return res.status(400).json({ error: 'Corpo da requisição inválido' });
-  }
+  if (typeof req.body !== 'object') return res.status(400).json({ error: 'Corpo inválido' });
 
   const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
   const amount = Number(req.body.amount);
@@ -100,10 +76,7 @@ app.post('/api/expenses', async (req, res) => {
   if (!description || !Number.isFinite(amount) || amount <= 0) {
     return res.status(400).json({ error: 'Descrição e valor são obrigatórios' });
   }
-
-  if (!SHEET_ID) {
-    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
-  }
+  if (!SHEET_ID) return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
 
   try {
     await upsertExpenseRow([date, description, amount, normalizedType]);
@@ -119,10 +92,7 @@ app.delete('/api/expenses/:rowIndex', async (req, res) => {
   if (!Number.isInteger(rowIndex) || rowIndex < EXPENSES_START_ROW || rowIndex > EXPENSES_END_ROW) {
     return res.status(400).json({ error: 'Linha inválida' });
   }
-
-  if (!SHEET_ID) {
-    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
-  }
+  if (!SHEET_ID) return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
 
   try {
     await clearExpenseRow(rowIndex);
@@ -134,26 +104,17 @@ app.delete('/api/expenses/:rowIndex', async (req, res) => {
 });
 
 app.post('/api/counters', async (req, res) => {
-  if (typeof req.body !== 'object') {
-    return res.status(400).json({ error: 'Corpo da requisição inválido' });
-  }
+  if (typeof req.body !== 'object') return res.status(400).json({ error: 'Corpo inválido' });
 
   const { index, value, category = 'sacolao' } = req.body;
-
   if (!Number.isInteger(index) || !Number.isInteger(value) || index < 0 || value < 0) {
     return res.status(400).json({ error: 'index e value devem ser inteiros positivos' });
   }
-
-  if (!SHEET_ID) {
-    return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
-  }
+  if (!SHEET_ID) return res.status(500).json({ error: 'Variável GOOGLE_SHEETS_ID não configurada' });
 
   const normalizedCategory = String(category).toLowerCase();
   const targetCategory = CATEGORY_CONFIG[normalizedCategory];
-
-  if (!targetCategory) {
-    return res.status(400).json({ error: 'Categoria desconhecida' });
-  }
+  if (!targetCategory) return res.status(400).json({ error: 'Categoria desconhecida' });
 
   try {
     const sheets = await getSheetsClient();
@@ -166,7 +127,6 @@ app.post('/api/counters', async (req, res) => {
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [[value]] },
     });
-
     res.json({ success: true });
   } catch (error) {
     console.error('Falha ao atualizar célula no Google Sheets', error);
@@ -183,9 +143,7 @@ app.post('/api/inventory', async (req, res) => {
   const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
   const quantity = Number(req.body.quantity ?? 0);
 
-  if (!name) {
-    return res.status(400).json({ error: 'Nome é obrigatório' });
-  }
+  if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
   if (!Number.isFinite(quantity) || quantity < 0) {
     return res.status(400).json({ error: 'Quantidade inválida' });
   }
@@ -194,29 +152,46 @@ app.post('/api/inventory', async (req, res) => {
   }
 
   const targetCategory = CATEGORY_CONFIG[category];
-  if (!targetCategory) {
-    return res.status(400).json({ error: 'Categoria desconhecida' });
-  }
+  if (!targetCategory) return res.status(400).json({ error: 'Categoria desconhecida' });
 
-  let nameColumn;
+  const appendConfig = INVENTORY_APPEND[category];
+  const startCol = appendConfig?.startCol ?? getPreviousColumn(targetCategory.column);
+  const endCol = appendConfig?.endCol ?? targetCategory.column;
+  const startRow = appendConfig?.startRow ?? targetCategory.startRow;
+  const endRow = appendConfig?.endRow ?? 200;
+  const tab = appendConfig?.tab || targetCategory.tab;
+  const readRange = `${tab}!${startCol}${startRow}:${endCol}${endRow}`;
+
+  let targetRow = startRow;
   try {
-    nameColumn = getPreviousColumn(targetCategory.column);
+    const sheets = await getSheetsClient();
+    const existing = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: readRange,
+      majorDimension: 'ROWS',
+    });
+    const rows = existing.data.values || [];
+    const relativeIndex = rows.findIndex((row) => row.every((cell) => !String(cell ?? '').trim()));
+    const targetIndex = relativeIndex === -1 ? rows.length : relativeIndex;
+    targetRow = startRow + targetIndex;
+    if (targetRow > endRow) {
+      return res.status(400).json({ error: 'Intervalo de itens está cheio' });
+    }
   } catch (err) {
-    return res.status(400).json({ error: 'Coluna inválida para a categoria' });
+    console.error('Falha ao ler intervalo de itens', err);
+    return res.status(500).json({ error: 'Falha ao ler intervalo de itens' });
   }
 
   try {
     const sheets = await getSheetsClient();
-    const range = `${targetCategory.tab}!${nameColumn}${targetCategory.startRow}:${targetCategory.column}`;
+    const range = `${tab}!${startCol}${targetRow}:${endCol}${targetRow}`;
 
-    await sheets.spreadsheets.values.append({
+    await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range,
       valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
       requestBody: { values: [[name, quantity]] },
     });
-
     res.json({ success: true });
   } catch (error) {
     console.error('Falha ao inserir item no inventário', error);
@@ -234,9 +209,7 @@ async function getSheetsClient() {
   if (cachedSheetsClient) return cachedSheetsClient;
 
   const rawCredentials = process.env.GOOGLE_SHEETS_CREDENTIALS;
-  if (!rawCredentials) {
-    throw new Error('Variável GOOGLE_SHEETS_CREDENTIALS não configurada');
-  }
+  if (!rawCredentials) throw new Error('Variável GOOGLE_SHEETS_CREDENTIALS não configurada');
 
   let credentials;
   try {
@@ -269,9 +242,7 @@ async function fetchExpenseEntries() {
       const typeRaw = (row[3] || '').toString().toLowerCase();
       const type =
         typeRaw === 'nao_essencial' ? 'nao_essencial' : typeRaw === 'contas' ? 'contas' : 'essencial';
-      if (!date && !description && amount === 0) {
-        return null;
-      }
+      if (!date && !description && amount === 0) return null;
       return {
         rowIndex: EXPENSES_START_ROW + index,
         date,
@@ -335,9 +306,7 @@ function getCustomMonthKey(dateString) {
 }
 
 function parseNumber(value) {
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : 0;
-  }
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
   if (!value) return 0;
   const cleaned = String(value).replace(/[^\d,-]/g, '').replace('.', '').replace(',', '.');
   const parsed = Number(cleaned);
@@ -358,9 +327,7 @@ async function upsertExpenseRow(rowValues) {
   const targetIndex = relativeIndex === -1 ? rows.length : relativeIndex;
   const nextRow = EXPENSES_START_ROW + targetIndex;
 
-  if (nextRow > EXPENSES_END_ROW) {
-    throw new Error('Intervalo de despesas (A5:D200) está cheio.');
-  }
+  if (nextRow > EXPENSES_END_ROW) throw new Error('Intervalo de despesas está cheio.');
 
   const writeRange = `${EXPENSES_TAB}!A${nextRow}:D${nextRow}`;
   await sheets.spreadsheets.values.update({
@@ -386,8 +353,6 @@ function isRowEmpty(row = []) {
 
 function getPreviousColumn(columnLetter) {
   const upper = String(columnLetter || '').trim().toUpperCase();
-  if (!/^[A-Z]$/.test(upper) || upper === 'A') {
-    throw new Error('Coluna inválida');
-  }
+  if (!/^[A-Z]$/.test(upper) || upper === 'A') throw new Error('Coluna inválida');
   return String.fromCharCode(upper.charCodeAt(0) - 1);
 }
