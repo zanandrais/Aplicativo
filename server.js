@@ -27,6 +27,7 @@ const EXPENSES_END_ROW = Number(process.env.EXPENSES_END_ROW ?? 200);
 const EXPENSES_RANGE = process.env.EXPENSES_RANGE || `A${EXPENSES_START_ROW}:D${EXPENSES_END_ROW}`;
 const META_ESSENCIAL_CELL = process.env.META_ESSENCIAL_CELL || 'Z5';
 const META_NAO_ESSENCIAL_CELL = process.env.META_NAO_ESSENCIAL_CELL || 'Z7';
+const META_CONTAS_CELL = process.env.META_CONTAS_CELL || 'Z9';
 
 const CATEGORY_CONFIG = {
   sacolao: {
@@ -83,7 +84,8 @@ app.post('/api/expenses', async (req, res) => {
   const amount = Number(req.body.amount);
   const date = req.body.date ? String(req.body.date) : new Date().toISOString().slice(0, 10);
   const type = typeof req.body.type === 'string' ? req.body.type.trim().toLowerCase() : 'essencial';
-  const normalizedType = type === 'nao_essencial' ? 'nao_essencial' : 'essencial';
+  const normalizedType =
+    type === 'nao_essencial' ? 'nao_essencial' : type === 'contas' ? 'contas' : 'essencial';
 
   if (!description || !Number.isFinite(amount) || amount <= 0) {
     return res.status(400).json({ error: 'Descrição e valor são obrigatórios' });
@@ -205,7 +207,8 @@ async function fetchExpenseEntries() {
       const description = row[1] || '';
       const amount = parseNumber(row[2]);
       const typeRaw = (row[3] || '').toString().toLowerCase();
-      const type = typeRaw === 'nao_essencial' ? 'nao_essencial' : 'essencial';
+      const type =
+        typeRaw === 'nao_essencial' ? 'nao_essencial' : typeRaw === 'contas' ? 'contas' : 'essencial';
       if (!date && !description && amount === 0) {
         return null;
       }
@@ -223,20 +226,22 @@ async function fetchExpenseEntries() {
 
 async function readMetaGoals() {
   const sheets = await getSheetsClient();
-  const [essencialResp, naoEssencialResp] = await Promise.all([
+  const [essencialResp, naoEssencialResp, contasResp] = await Promise.all([
     sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${META_ESSENCIAL_CELL}:${META_ESSENCIAL_CELL}` }),
     sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${META_NAO_ESSENCIAL_CELL}:${META_NAO_ESSENCIAL_CELL}` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${META_CONTAS_CELL}:${META_CONTAS_CELL}` }),
   ]);
   return {
     essencial: parseNumber(essencialResp.data.values?.[0]?.[0]),
     nao_essencial: parseNumber(naoEssencialResp.data.values?.[0]?.[0]),
+    contas: parseNumber(contasResp.data.values?.[0]?.[0]),
   };
 }
 
 function groupTotalsByMonthAndCategory(entries) {
   return entries.reduce((acc, entry) => {
     if (!entry.monthKey) return acc;
-    const bucket = acc[entry.monthKey] || { essencial: 0, nao_essencial: 0 };
+    const bucket = acc[entry.monthKey] || { essencial: 0, nao_essencial: 0, contas: 0 };
     bucket[entry.type] = (bucket[entry.type] || 0) + entry.amount;
     acc[entry.monthKey] = bucket;
     return acc;

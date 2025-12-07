@@ -1,7 +1,7 @@
-const state = {
+ï»¿const state = {
   entries: [],
   categoryTotals: {},
-  meta: { essencial: 0, nao_essencial: 0 },
+  meta: { essencial: 0, nao_essencial: 0, contas: 0 },
 };
 
 const tableBody = document.querySelector('[data-expenses-list]');
@@ -65,9 +65,9 @@ function normalizeEntry(entry) {
 
 function buildMonthOptions() {
   if (!monthSelect) return;
-  const keys = Array.from(
-    new Set(state.entries.map((entry) => entry.monthKey).filter(Boolean))
-  ).sort().reverse();
+  const keys = Array.from(new Set(state.entries.map((entry) => entry.monthKey).filter(Boolean)))
+    .sort()
+    .reverse();
   const current = getMonthKey(new Date().toISOString().slice(0, 10));
   if (current && !keys.includes(current)) {
     keys.unshift(current);
@@ -97,7 +97,7 @@ function renderFiltered() {
   });
 
   if (!filtered.length) {
-    tableBody.innerHTML = `<tr><td colspan="5">Nenhum lançamento encontrado.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="5">Nenhum lanÃ§amento encontrado.</td></tr>`;
     updateSummaries(0);
     return;
   }
@@ -107,7 +107,12 @@ function renderFiltered() {
       const date = escapeHtml(entry.date || '-');
       const description = escapeHtml(entry.description || '-');
       const value = formatCurrency(entry.amount);
-      const category = entry.type === 'nao_essencial' ? 'Não essencial' : 'Essencial';
+      const category =
+        entry.type === 'nao_essencial'
+          ? 'NÃ£o essencial'
+          : entry.type === 'contas'
+          ? 'Contas'
+          : 'Essencial';
       return `
         <tr>
           <td>${date}</td>
@@ -141,16 +146,19 @@ function updateSummaries(amount) {
     return;
   }
 
-  const metaValue = categoryFilter === 'nao_essencial'
-    ? state.meta.nao_essencial || 0
-    : state.meta.essencial || 0;
+  const metaValue =
+    categoryFilter === 'nao_essencial'
+      ? state.meta.nao_essencial || 0
+      : categoryFilter === 'contas'
+      ? state.meta.contas || 0
+      : state.meta.essencial || 0;
   metaNode.textContent = formatCurrency(metaValue);
   balanceNode.textContent = formatCurrency(metaValue - amount);
 }
 
 async function handleDelete(rowIndex) {
   if (!rowIndex) return;
-  const confirmed = window.confirm('Deseja realmente excluir este lançamento?');
+  const confirmed = window.confirm('Deseja realmente excluir este lanÃ§amento?');
   if (!confirmed) return;
 
   try {
@@ -161,7 +169,7 @@ async function handleDelete(rowIndex) {
     await loadExpenses();
   } catch (error) {
     console.error('Erro ao excluir gasto', error);
-    alert('Não foi possível excluir o lançamento.');
+    alert('NÃ£o foi possÃ­vel excluir o lanÃ§amento.');
   }
 }
 
