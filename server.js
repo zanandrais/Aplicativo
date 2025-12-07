@@ -25,9 +25,10 @@ const EXPENSES_TAB = process.env.EXPENSES_TAB || INVENTORY_TAB;
 const EXPENSES_START_ROW = Number(process.env.EXPENSES_START_ROW ?? 5);
 const EXPENSES_END_ROW = Number(process.env.EXPENSES_END_ROW ?? 200);
 const EXPENSES_RANGE = process.env.EXPENSES_RANGE || `A${EXPENSES_START_ROW}:D${EXPENSES_END_ROW}`;
-const META_ESSENCIAL_CELL = process.env.META_ESSENCIAL_CELL || 'A3';
-const META_NAO_ESSENCIAL_CELL = process.env.META_NAO_ESSENCIAL_CELL || 'B3';
-const META_CONTAS_CELL = process.env.META_CONTAS_CELL || 'C3';
+// Metas padrão (ajuste via variáveis de ambiente conforme a posição real na planilha)
+const META_ESSENCIAL_CELL = process.env.META_ESSENCIAL_CELL || 'Z4';
+const META_NAO_ESSENCIAL_CELL = process.env.META_NAO_ESSENCIAL_CELL || 'Z6';
+const META_CONTAS_CELL = process.env.META_CONTAS_CELL || 'Z8';
 
 const CATEGORY_CONFIG = {
   sacolao: {
