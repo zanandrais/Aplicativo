@@ -34,6 +34,7 @@ const CATEGORY_CONFIG = {
   dispensa: { tab: DISPENSA_TAB, column: DISPENSA_COLUMN, startRow: DISPENSA_START_ROW },
   acougue: { tab: ACOUGUE_TAB, column: ACOUGUE_COLUMN, startRow: ACOUGUE_START_ROW },
   limpeza: { tab: LIMPEZA_TAB, column: LIMPEZA_COLUMN, startRow: LIMPEZA_START_ROW },
+  compras: { tab: INVENTORY_TAB, column: 'AD', startRow: 3 },
 };
 
 const INVENTORY_APPEND = {
@@ -41,6 +42,7 @@ const INVENTORY_APPEND = {
   dispensa: { tab: DISPENSA_TAB, startCol: 'J', endCol: 'K', startRow: 5, endRow: 200 },
   acougue: { tab: ACOUGUE_TAB, startCol: 'O', endCol: 'P', startRow: 5, endRow: 200 },
   limpeza: { tab: LIMPEZA_TAB, startCol: 'T', endCol: 'U', startRow: 5, endRow: 200 },
+  compras: { tab: INVENTORY_TAB, startCol: 'AC', endCol: 'AD', startRow: 3, endRow: 100 },
 };
 
 app.use(express.json());

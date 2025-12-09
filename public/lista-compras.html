@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Equipe Flex - Limpeza</title>
+    <title>Equipe Flex - Lista de Compras</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="counter-board" data-csv-range="T5:U50" data-category="limpeza">
+    <main class="counter-board" data-csv-range="AC3:AD100" data-category="compras">
       <header class="counter-board__header">
-        <h1>Equipe Flex — Limpeza</h1>
-        <p>Registre as quantidades dos itens de Limpeza com os botões abaixo.</p>
+        <h1>Equipe Flex - Lista de Compras</h1>
+        <p>Itens da aba inventário (AC3:AD100). Ajuste as quantidades com os botões.</p>
         <nav class="category-nav">
           <span>Categorias:</span>
           <a class="category-nav__link" href="index.html">Registrar gasto</a>
@@ -18,8 +18,10 @@
           <a class="category-nav__link" href="sacolao.html">Sacolão</a>
           <a class="category-nav__link" href="dispensa.html">Dispensa</a>
           <a class="category-nav__link" href="acougue.html">Açougue</a>
+          <a class="category-nav__link" href="limpeza.html">Limpeza</a>
         </nav>
       </header>
+
       <p class="counter-status" data-status aria-live="polite">Carregando nomes...</p>
 
       <section class="counter-add">
@@ -40,4 +42,3 @@
     <script type="module" src="app.js"></script>
   </body>
 </html>
-
