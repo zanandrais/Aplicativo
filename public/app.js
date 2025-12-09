@@ -1,4 +1,4 @@
-const MIN_VALUE = 0;
+﻿const MIN_VALUE = 0;
 const SHEET_BASE_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vSknwMWFA6Akwkw3sihnQNjwJG9qAe_3dcAqevkqmf5LFKYtodqVOdJeDz7lDg0Klyi0dH24H2LH1-5/pub?gid=1183098319&single=true&output=csv&range=';
 
@@ -15,6 +15,7 @@ const state = {
   counters: new Map(),
   category: config.category,
 };
+const isShoppingList = state.category === 'compras';
 
 const listElement = document.querySelector('.counter-list');
 const statusElement = document.querySelector('[data-status]');
@@ -27,19 +28,25 @@ init();
 async function init() {
   setStatus('Carregando nomes...');
 
+  if (isShoppingList && formElement) {
+    formElement.style.display = 'none';
+    const formSection = formElement.closest('.counter-add');
+    if (formSection) formSection.style.display = 'none';
+  }
+
   try {
     const entries = await fetchInventory();
 
     if (!entries.length) {
       listElement.innerHTML = '';
-      setStatus('Nenhum nome encontrado no invent�rio.');
+      setStatus('Nenhum nome encontrado no inventário.');
       return;
     }
 
     renderList(entries);
     setStatus('');
   } catch (error) {
-    console.error('Erro ao carregar nomes do invent�rio', error);
+    console.error('Erro ao carregar nomes do inventário', error);
     setStatus('Erro ao carregar nomes. Tente novamente mais tarde.');
   }
 }
@@ -78,13 +85,17 @@ function renderList(entries) {
   state.entries = entries;
   state.counters.clear();
 
-  const markup = entries.map((entry, index) => createCounterMarkup(entry, index)).join('');
+  const markup = isShoppingList
+    ? entries.map((entry) => createReadOnlyMarkup(entry)).join('')
+    : entries.map((entry, index) => createCounterMarkup(entry, index)).join('');
   listElement.innerHTML = markup;
 
-  entries.forEach((entry, index) => {
-    state.counters.set(index, entry.value ?? 0);
-    syncDisplay(index);
-  });
+  if (!isShoppingList) {
+    entries.forEach((entry, index) => {
+      state.counters.set(index, entry.value ?? 0);
+      syncDisplay(index);
+    });
+  }
 }
 
 function createCounterMarkup(entry, index) {
@@ -95,7 +106,7 @@ function createCounterMarkup(entry, index) {
       <span class="counter-item__name">${safeName}</span>
       <div class="counter-item__controls" data-id="${index}">
         <button class="counter-btn" data-direction="down" aria-label="Diminuir valor para ${safeName}">-</button>
-        <output class="counter-value" aria-label="Pontua��o de ${safeName}">${startValue}</output>
+        <output class="counter-value" aria-label="Pontuação de ${safeName}">${startValue}</output>
         <button class="counter-btn" data-direction="up" aria-label="Aumentar valor para ${safeName}">+</button>
       </div>
     </li>
@@ -112,6 +123,7 @@ function escapeHtml(value = '') {
 }
 
 function syncDisplay(index) {
+  if (isShoppingList) return;
   const wrapper = listElement.querySelector(`.counter-item__controls[data-id="${index}"]`);
   if (!wrapper) return;
 
@@ -129,6 +141,7 @@ function syncDisplay(index) {
 }
 
 function updateCounter(index, direction) {
+  if (isShoppingList) return;
   const current = state.counters.get(index) ?? 0;
   const delta = direction === 'up' ? 1 : -1;
   const nextValue = Math.max(MIN_VALUE, current + delta);
@@ -144,6 +157,7 @@ function setStatus(message) {
 }
 
 async function persistCounter(index, value) {
+  if (isShoppingList) return;
   try {
     const response = await fetch('/api/counters', {
       method: 'POST',
@@ -156,11 +170,12 @@ async function persistCounter(index, value) {
     }
   } catch (error) {
     console.error('Falha ao salvar valor no Google Sheets', error);
-    setStatus('N�o foi poss�vel salvar o valor na planilha. Verifique o servidor.');
+    setStatus('Não foi possível salvar o valor na planilha. Verifique o servidor.');
   }
 }
 
 async function handleNewItem(event) {
+  if (isShoppingList) return;
   event.preventDefault();
   const name = nameInput?.value?.trim() || '';
   const quantity = Number(qtyInput?.value ?? 0);
@@ -170,7 +185,7 @@ async function handleNewItem(event) {
     return;
   }
   if (!Number.isFinite(quantity) || quantity < 0) {
-    setStatus('Quantidade inv�lida.');
+    setStatus('Quantidade inválida.');
     return;
   }
 
@@ -193,12 +208,13 @@ async function handleNewItem(event) {
     renderList(entries);
     setStatus('');
   } catch (error) {
-    console.error('Falha ao adicionar item no invent�rio', error);
-    setStatus('N�o foi poss�vel adicionar o item. Verifique o servidor.');
+    console.error('Falha ao adicionar item no inventário', error);
+    setStatus('Não foi possível adicionar o item. Verifique o servidor.');
   }
 }
 
 listElement?.addEventListener('click', (event) => {
+  if (isShoppingList) return;
   const button = event.target.closest('.counter-btn');
   if (!button) return;
 
@@ -212,3 +228,21 @@ listElement?.addEventListener('click', (event) => {
 });
 
 formElement?.addEventListener('submit', handleNewItem);
+
+function createReadOnlyMarkup(entry) {
+  const safeName = escapeHtml(entry.name);
+  const value = Number.isFinite(entry.value) ? entry.value : 0;
+  const price = formatPrice(value);
+  return `
+    <li class="counter-item">
+      <span class="counter-item__name">${safeName}</span>
+      <div class="counter-item__controls" aria-label="Preço">
+        <output class="counter-value">${price}</output>
+      </div>
+    </li>
+  `;
+}
+
+function formatPrice(value) {
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
