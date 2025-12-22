@@ -38,10 +38,10 @@ const CATEGORY_CONFIG = {
 };
 
 const INVENTORY_APPEND = {
-  sacolao: { tab: INVENTORY_TAB, startCol: 'E', endCol: 'F', startRow: 5, endRow: 200 },
-  dispensa: { tab: DISPENSA_TAB, startCol: 'J', endCol: 'K', startRow: 5, endRow: 200 },
-  acougue: { tab: ACOUGUE_TAB, startCol: 'O', endCol: 'P', startRow: 5, endRow: 200 },
-  limpeza: { tab: LIMPEZA_TAB, startCol: 'T', endCol: 'U', startRow: 5, endRow: 200 },
+  sacolao: { tab: INVENTORY_TAB, startCol: 'E', endCol: 'F', clearEndCol: 'G', startRow: 5, endRow: 200 },
+  dispensa: { tab: DISPENSA_TAB, startCol: 'J', endCol: 'K', clearEndCol: 'L', startRow: 5, endRow: 200 },
+  acougue: { tab: ACOUGUE_TAB, startCol: 'O', endCol: 'P', clearEndCol: 'Q', startRow: 5, endRow: 200 },
+  limpeza: { tab: LIMPEZA_TAB, startCol: 'T', endCol: 'U', clearEndCol: 'V', startRow: 5, endRow: 200 },
   compras: { tab: INVENTORY_TAB, startCol: 'AC', endCol: 'AD', startRow: 3, endRow: 100 },
 };
 
@@ -198,6 +198,44 @@ app.post('/api/inventory', async (req, res) => {
   } catch (error) {
     console.error('Falha ao inserir item no inventário', error);
     res.status(500).json({ error: 'Falha ao salvar item na planilha' });
+  }
+});
+
+app.delete('/api/inventory', async (req, res) => {
+  if (typeof req.body !== 'object') {
+    return res.status(400).json({ error: 'Corpo da requisi‡Æo inv lido' });
+  }
+
+  const category = String(req.body.category || 'sacolao').toLowerCase();
+  const index = Number(req.body.index);
+
+  if (!Number.isInteger(index) || index < 0) {
+    return res.status(400).json({ error: 'Index inv lido' });
+  }
+  if (!SHEET_ID) {
+    return res.status(500).json({ error: 'Vari vel GOOGLE_SHEETS_ID nÆo configurada' });
+  }
+
+  const targetCategory = CATEGORY_CONFIG[category];
+  const appendConfig = INVENTORY_APPEND[category];
+  if (!targetCategory || !appendConfig) {
+    return res.status(400).json({ error: 'Categoria desconhecida' });
+  }
+
+  const startRow = appendConfig.startRow ?? targetCategory.startRow;
+  const startCol = appendConfig.startCol ?? getPreviousColumn(targetCategory.column);
+  const clearEndCol = appendConfig.clearEndCol || appendConfig.endCol || targetCategory.column;
+  const tab = appendConfig.tab || targetCategory.tab;
+  const row = startRow + index;
+
+  try {
+    const sheets = await getSheetsClient();
+    const range = `${tab}!${startCol}${row}:${clearEndCol}${row}`;
+    await sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Falha ao excluir item do invent rio', error);
+    res.status(500).json({ error: 'NÆo foi poss¡vel excluir o item' });
   }
 });
 

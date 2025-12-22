@@ -238,6 +238,22 @@ body {
   font-size: 1.1rem;
 }
 
+.counter-item__info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.counter-item__price {
+  background: #e0f2fe;
+  color: #0f172a;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
 .counter-item__controls {
   display: flex;
   align-items: center;
@@ -259,6 +275,10 @@ body {
 
 .counter-btn[data-direction='down'] {
   background: #f97316;
+}
+
+.counter-btn--delete {
+  background: #ef4444;
 }
 
 .counter-btn:disabled {

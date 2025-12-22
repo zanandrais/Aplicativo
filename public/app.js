@@ -1,10 +1,10 @@
-﻿const MIN_VALUE = 0;
+const MIN_VALUE = 0;
 const SHEET_BASE_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vSknwMWFA6Akwkw3sihnQNjwJG9qAe_3dcAqevkqmf5LFKYtodqVOdJeDz7lDg0Klyi0dH24H2LH1-5/pub?gid=1183098319&single=true&output=csv&range=';
 
 const rootElement = document.querySelector('[data-category]');
 const config = {
-  csvRange: rootElement?.dataset.csvRange ?? 'E5:F17',
+  csvRange: rootElement?.dataset.csvRange ?? 'E5:G50',
   category: rootElement?.dataset.category ?? 'sacolao',
 };
 
@@ -67,10 +67,11 @@ async function fetchInventory() {
 }
 
 function parseInventoryRow(row) {
-  const [rawName = '', rawValue = ''] = row.split(',');
+  const [rawName = '', rawValue = '', rawPrice = ''] = row.split(',');
   return {
     name: rawName.trim(),
     value: parseCounterValue(rawValue),
+    price: parseCounterValue(rawPrice),
   };
 }
 
@@ -101,13 +102,18 @@ function renderList(entries) {
 function createCounterMarkup(entry, index) {
   const safeName = escapeHtml(entry.name);
   const startValue = Number.isFinite(entry.value) ? entry.value : 0;
+  const price = formatPrice(entry.price ?? 0);
   return `
     <li class="counter-item">
-      <span class="counter-item__name">${safeName}</span>
+      <div class="counter-item__info">
+        <span class="counter-item__name">${safeName}</span>
+        <span class="counter-item__price">${price}</span>
+      </div>
       <div class="counter-item__controls" data-id="${index}">
         <button class="counter-btn" data-direction="down" aria-label="Diminuir valor para ${safeName}">-</button>
         <output class="counter-value" aria-label="Pontuação de ${safeName}">${startValue}</output>
         <button class="counter-btn" data-direction="up" aria-label="Aumentar valor para ${safeName}">+</button>
+        <button class="counter-btn counter-btn--delete" data-action="delete" data-id="${index}" aria-label="Excluir ${safeName}">×</button>
       </div>
     </li>
   `;
@@ -213,9 +219,42 @@ async function handleNewItem(event) {
   }
 }
 
+async function handleDelete(index) {
+  if (isShoppingList) return;
+  setStatus('Removendo item...');
+  try {
+    const response = await fetch('/api/inventory', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ index, category: state.category }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status}`);
+    }
+
+    const entries = await fetchInventory();
+    renderList(entries);
+    setStatus('');
+  } catch (error) {
+    console.error('Falha ao remover item do inventário', error);
+    setStatus('Não foi possível remover o item. Verifique o servidor.');
+  }
+}
+
 listElement?.addEventListener('click', (event) => {
   if (isShoppingList) return;
-  const button = event.target.closest('.counter-btn');
+
+  const deleteBtn = event.target.closest('.counter-btn--delete');
+  if (deleteBtn) {
+    const deleteIndex = Number(deleteBtn.dataset.id);
+    if (Number.isFinite(deleteIndex)) {
+      handleDelete(deleteIndex);
+    }
+    return;
+  }
+
+  const button = event.target.closest(".counter-btn[data-direction]");
   if (!button) return;
 
   const wrapper = button.closest('.counter-item__controls');
@@ -232,7 +271,8 @@ formElement?.addEventListener('submit', handleNewItem);
 function createReadOnlyMarkup(entry) {
   const safeName = escapeHtml(entry.name);
   const value = Number.isFinite(entry.value) ? entry.value : 0;
-  const price = formatPrice(value);
+  const priceValue = Number.isFinite(entry.price) && entry.price > 0 ? entry.price : value;
+  const price = formatPrice(priceValue);
   return `
     <li class="counter-item">
       <span class="counter-item__name">${safeName}</span>
@@ -244,5 +284,6 @@ function createReadOnlyMarkup(entry) {
 }
 
 function formatPrice(value) {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const amount = Number.isFinite(value) ? value : 0;
+  return amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
